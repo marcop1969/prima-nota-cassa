@@ -1,0 +1,18 @@
+# ─── DATI — mai versionati. Vivono in ~/Library/Application Support/PrimaNota/ ───
+prima_nota_data.json
+prima_nota_data.bak.json
+prima_nota_data.tmp
+*.tmp
+
+# ─── Ambiente Python locale (ogni figlia ha il suo) ───
+venv/
+__pycache__/
+*.pyc
+
+# ─── Vecchio export / launcher generato localmente ───
+Prima Nota 2026.app/
+avvia.command
+*.log
+
+# ─── macOS ───
+.DS_Store

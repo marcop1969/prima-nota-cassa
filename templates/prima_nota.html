@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prima Nota di Cassa 2026</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blu:       #1a3a5c;
+  --blu-mid:   #2d5986;
+  --accent:    #1a6fc4;
+  --verde:     #155e3a;
+  --verde-bg:  #f0fdf4;
+  --verde-bd:  #86efac;
+  --rosso:     #991b1b;
+  --rosso-bg:  #fff1f2;
+  --rosso-bd:  #fca5a5;
+  --giallo-bg: #fffbeb;
+  --giallo-bd: #fde68a;
+  --grigio:    #64748b;
+  --bordo:     #e2e8f0;
+  --bg:        #f1f5f9;
+  --card:      #ffffff;
+  --testo:     #1e293b;
+  --font:      'Georgia', 'Times New Roman', serif;
+  --mono:      'Courier New', Courier, monospace;
+}
+html { font-size: 14px; }
+body { font-family: var(--font); background: var(--bg); color: var(--testo); min-height: 100vh; }
+
+/* ─── HEADER ─── */
+.header {
+  background: var(--blu); color: white;
+  padding: 0 24px; display: flex; align-items: center;
+  justify-content: space-between; height: 52px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.header h1 { font-size: 15px; font-weight: normal; letter-spacing: .03em; color: #e2eaf4; }
+.header h1 em { color: #7eb8f7; font-style: italic; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+
+.btn {
+  font-family: var(--font); font-size: 12px; padding: 5px 13px;
+  border-radius: 5px; cursor: pointer; border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.12); color: white; transition: background .15s;
+}
+.btn:hover { background: rgba(255,255,255,.22); }
+.btn-green { background: #166534; border-color: #166534; }
+.btn-green:hover { background: #14532d; }
+.vista-sel { display: flex; border: 1px solid rgba(255,255,255,.2); border-radius: 5px; overflow: hidden; }
+.vista-btn {
+  font-family: var(--font); font-size: 11px; padding: 5px 12px;
+  border: none; background: none; color: rgba(255,255,255,.65); cursor: pointer;
+}
+.vista-btn.active { background: rgba(255,255,255,.22); color: white; }
+.vista-btn:not(:last-child) { border-right: 1px solid rgba(255,255,255,.2); }
+
+/* ─── MESI BAR ─── */
+.mesi-bar {
+  background: white; border-bottom: 2px solid var(--bordo);
+  display: flex; overflow-x: auto; padding: 0 14px;
+}
+.mese-tab {
+  font-family: var(--font); font-size: 12px; padding: 11px 13px;
+  border: none; background: none; color: var(--grigio);
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  white-space: nowrap; cursor: pointer; transition: color .15s;
+  position: relative;
+}
+.mese-tab:hover { color: var(--testo); }
+.mese-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: bold; }
+.mese-tab .dot {
+  position: absolute; top: 7px; right: 5px;
+  width: 5px; height: 5px; border-radius: 50%; background: #22c55e;
+}
+
+/* ─── KPI ─── */
+.kpi-bar {
+  display: grid; grid-template-columns: repeat(5,1fr);
+  gap: 1px; background: var(--bordo); border-bottom: 1px solid var(--bordo);
+}
+.kpi-cell { background: white; padding: 9px 14px; }
+.kpi-cell:last-child { text-align: right; }
+.kpi-label { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--grigio); margin-bottom: 2px; }
+.kpi-val { font-family: var(--mono); font-size: 14px; font-weight: bold; }
+.kv-blu { color: var(--accent); }
+.kv-rosso { color: var(--rosso); }
+.kv-verde { color: var(--verde); }
+.kv-warn  { color: #92400e; }
+
+/* ─── MAIN LAYOUT ─── */
+.main-layout { display: flex; height: calc(100vh - 117px); overflow: hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: 210px; min-width: 210px; background: white;
+  border-right: 1px solid var(--bordo); overflow-y: auto; padding: 6px 0;
+}
+.sb-month { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--grigio); padding: 5px 12px 3px; }
+.sb-total { margin: 6px 8px 2px; padding: 8px 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; display: flex; justify-content: space-between; align-items: baseline; }
+.sb-tot-label { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #0369a1; font-weight: bold; }
+.sb-tot-val { font-family: var(--mono); font-size: 14px; font-weight: bold; color: #0369a1; }
+.gi {
+  display: flex; align-items: center; padding: 6px 10px;
+  cursor: pointer; border-left: 3px solid transparent; gap: 7px; transition: background .1s;
+}
+.gi:hover { background: #f8fafc; }
+.gi.active { background: #eff6ff; border-left-color: var(--accent); }
+.gi-wd { font-size: 10px; color: var(--grigio); width: 24px; text-align: center; font-family: var(--mono); }
+.gi-wd.wk { color: #dc2626; }
+.gi-num { font-size: 13px; font-family: var(--mono); width: 20px; }
+.gi-body { flex: 1; overflow: hidden; }
+.gi-note { font-size: 10px; color: var(--grigio); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gi-amt { font-size: 10px; font-family: var(--mono); font-weight: bold; }
+.gi-amt.pos { color: var(--verde); }
+.gi-amt.neg { color: var(--rosso); }
+.gi-amt.warn { color: #b45309; }
+.dot-g { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+.dot-e { width: 6px; height: 6px; border-radius: 50%; background: #e2e8f0; flex-shrink: 0; }
+.dot-w { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+
+/* ─── PANNELLO DETTAGLIO ─── */
+.detail { flex: 1; overflow-y: auto; padding: 18px 22px; background: var(--bg); }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--grigio); }
+.empty-state .ico { font-size: 44px; margin-bottom: 10px; }
+.empty-state h2 { font-size: 15px; font-weight: normal; margin-bottom: 5px; color: var(--testo); }
+
+/* ─── DAY CARD ─── */
+.day-card { background: var(--card); border: 1px solid var(--bordo); border-radius: 8px; overflow: hidden; max-width: 620px; }
+.day-hdr {
+  background: var(--blu); color: white; padding: 12px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.day-hdr .dg { font-size: 20px; font-weight: bold; font-family: var(--mono); }
+.day-hdr .ds { font-size: 11px; color: #7eb8f7; margin-top: 1px; }
+.ric-badge {
+  font-size: 11px; background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25); padding: 3px 10px;
+  border-radius: 99px; color: #bfdbfe;
+}
+
+/* ─── SEZIONI ─── */
+.sez { padding: 10px 14px; border-bottom: 1px solid var(--bordo); }
+.sez:last-child { border-bottom: none; }
+.sez-title {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--grigio); margin-bottom: 7px;
+  display: flex; align-items: center; gap: 6px;
+}
+.sez-title::after { content:''; flex:1; height:1px; background:var(--bordo); }
+
+/* GRIDS */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* LABEL + INPUT */
+.fl { }
+.fl label { display:block; font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--grigio); margin-bottom:3px; }
+.fl input[type="text"], .fl input[type="number"] {
+  width:100%; font-family:var(--font); font-size:13px;
+  padding:6px 8px; border:1px solid var(--bordo); border-radius:5px;
+  background:#f8fafc; color:var(--testo); transition:border-color .15s;
+}
+.fl input:focus { outline:none; border-color:var(--accent); background:white; }
+.fl input.mono { font-family:var(--mono); text-align:right; }
+.ro {
+  background:#f1f5f9; padding:6px 8px; border-radius:5px;
+  font-family:var(--mono); font-size:13px; text-align:right;
+  border:1px solid transparent; font-weight:bold; color:var(--grigio);
+  min-height:32px; display:flex; align-items:center; justify-content:flex-end;
+}
+
+/* ─── BLOCCO PAGAMENTI (colonna) ─── */
+.pag-block { margin-bottom: 8px; background:white; border-radius:5px; padding:6px 8px; }
+.pag-block-title {
+  font-size: 12px; font-weight: bold; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--testo);
+  padding: 4px 0 4px 6px;
+  border-left: 3px solid var(--accent);
+  margin-bottom: 5px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pag-block-title span { font-family:var(--mono); font-size:11px; color:var(--rosso); font-weight:bold; }
+.pag-row { display:grid; grid-template-columns:1fr 120px 28px; gap:6px; margin-bottom:4px; align-items:center; }
+.btn-del {
+  width:28px; height:32px; border:1px solid var(--rosso-bd);
+  background:var(--rosso-bg); color:var(--rosso);
+  border-radius:5px; cursor:pointer; font-size:16px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.btn-del:hover { background:#fecaca; }
+.btn-add {
+  font-family:var(--font); font-size:11px; padding:4px 11px;
+  border:1px dashed #93c5fd; background:#eff6ff; color:#1d4ed8;
+  border-radius:5px; cursor:pointer; margin-top:3px;
+}
+.btn-add:hover { background:#dbeafe; }
+.no-voci { font-size:11px; color:#94a3b8; font-style:italic; margin-bottom:5px; }
+
+/* ─── ALERT QUADRATURA ─── */
+.alert-ok {
+  margin: 0 16px 14px; padding:9px 14px; border-radius:6px;
+  background:var(--verde-bg); border:1px solid var(--verde-bd);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.alert-warn {
+  margin: 0 16px 14px; padding:9px 14px; border-radius:6px;
+  background:var(--giallo-bg); border:2px solid #f59e0b;
+  display:flex; align-items:center; justify-content:space-between;
+  animation: pulse-warn .6s ease-in-out;
+}
+.alert-ok-fin {
+  margin: 14px 16px; padding:11px 14px; border-radius:6px;
+  background:var(--verde-bg); border:1px solid var(--verde-bd);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.alert-neg-fin {
+  margin: 14px 16px; padding:11px 14px; border-radius:6px;
+  background:var(--rosso-bg); border:2px solid var(--rosso-bd);
+  display:flex; align-items:center; justify-content:space-between;
+}
+@keyframes pulse-warn {
+  0%,100% { transform:scale(1); }
+  50% { transform:scale(1.01); }
+}
+.al-left .al-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; font-weight:bold; margin-bottom:2px; }
+.al-left .al-sub   { font-size:10px; color:var(--grigio); }
+.al-val { font-family:var(--mono); font-size:19px; font-weight:bold; }
+
+/* ─── INCASSO: campo grande ─── */
+.incasso-big-field {
+  width:100%; font-family:var(--mono); font-size:26px; font-weight:bold;
+  padding:9px 14px; border:2px solid var(--accent); border-radius:7px;
+  background:#eff6ff; color:var(--accent); text-align:right;
+  margin-bottom:8px; transition:border-color .15s;
+}
+.incasso-big-field:focus { outline:none; border-color:var(--blu); background:white; }
+.incasso-big-field::placeholder { color:#94a3b8; font-weight:normal; }
+/* ─── Campi importo ricevute/fatture ─── */
+.importo-sub-field {
+  width:100%; font-family:var(--mono); font-size:17px; font-weight:bold;
+  padding:7px 11px; border:2px solid var(--bordo); border-radius:6px;
+  background:#f8fafc; color:var(--testo); text-align:right; transition:border-color .15s;
+}
+.importo-sub-field:focus { outline:none; border-color:var(--accent); background:white; }
+.importo-sub-field::placeholder { color:#94a3b8; font-weight:normal; }
+.importo-sub-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--grigio); display:block; margin-bottom:3px; }
+/* ─── POS singolo ─── */
+.pos-single-input {
+  width:100%; font-family:var(--mono); font-size:15px; font-weight:bold;
+  padding:6px 10px; border:1px solid var(--bordo); border-radius:5px;
+  background:#f8fafc; color:var(--rosso); text-align:right;
+}
+.pos-single-input:focus { outline:none; border-color:var(--accent); background:white; }
+/* ─── Totale cassa del giorno ─── */
+.totale-cassa-bar {
+  margin-top:10px; padding:11px 14px; border-radius:7px;
+  background:#1e293b; border:none;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.totale-cassa-label { font-size:9px; text-transform:uppercase; letter-spacing:.1em; font-weight:bold; color:#94a3b8; }
+.totale-cassa-val { font-family:var(--mono); font-size:20px; font-weight:bold; color:white; }
+
+/* ─── RIEPILOGO ─── */
+.riep-wrap { padding:18px 22px; overflow-y:auto; height:calc(100vh - 117px); }
+.riep-tbl { background:white; border:1px solid var(--bordo); border-radius:8px; overflow:hidden; max-width:700px; }
+.riep-tbl table { width:100%; border-collapse:collapse; font-size:12px; }
+.riep-tbl thead { background:var(--blu); color:white; }
+.riep-tbl thead th { padding:9px 13px; font-size:10px; font-weight:normal; text-transform:uppercase; letter-spacing:.07em; text-align:right; }
+.riep-tbl thead th:first-child { text-align:left; }
+.riep-tbl tbody tr { border-bottom:1px solid var(--bordo); cursor:pointer; transition:background .1s; }
+.riep-tbl tbody tr:hover { background:#f8fafc; }
+.riep-tbl td { padding:9px 13px; text-align:right; font-family:var(--mono); }
+.riep-tbl td:first-child { text-align:left; font-family:var(--font); font-weight:bold; }
+.riep-tbl tfoot tr { background:#f1f5f9; border-top:2px solid var(--bordo); }
+.riep-tbl tfoot td { padding:10px 13px; font-weight:bold; }
+
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+
+/* ─── PANNELLO SOSPESI (destra) ─── */
+.sospesi-panel {
+  width:270px; min-width:270px; background:white;
+  border-left:2px solid var(--bordo); display:flex;
+  flex-direction:column; overflow:hidden;
+}
+.sp-hdr {
+  background:#1e293b; color:white; padding:10px 13px;
+  font-size:10px; text-transform:uppercase; letter-spacing:.1em;
+  font-weight:bold; flex-shrink:0;
+}
+.sp-list { flex:1; overflow-y:auto; }
+.sp-vuoto { padding:18px 12px; text-align:center; font-size:11px; color:#94a3b8; font-style:italic; }
+.sp-item { padding:9px 12px; border-bottom:1px solid var(--bordo); }
+.sp-item-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
+.sp-item-data { font-size:9px; color:var(--grigio); }
+.sp-item-amt { font-family:var(--mono); font-size:12px; font-weight:bold; color:var(--rosso); }
+.sp-item-desc { font-size:11px; color:var(--testo); margin-bottom:4px; }
+.sp-item-desc-input { width:100%; font-family:var(--font); font-size:11px; color:var(--testo); border:none; border-bottom:1px dashed transparent; background:transparent; padding:0; margin-bottom:4px; outline:none; }
+.sp-item-desc-input:hover { border-bottom-color:#cbd5e1; }
+.sp-item-desc-input:focus { border-bottom:1px solid var(--accent); background:#f0f9ff; border-radius:2px; padding:0 2px; }
+.sp-warn-badge { font-size:9px; color:#b45309; background:#fffbeb; border:1px solid #fde68a; border-radius:4px; padding:2px 6px; margin-bottom:4px; display:inline-block; }
+.sp-btn-rientro { font-family:var(--font); font-size:9px; color:var(--accent); border:1px solid #bfdbfe; background:#eff6ff; border-radius:4px; padding:3px 8px; cursor:pointer; }
+.sp-btn-rientro:hover { background:#dbeafe; }
+.sp-form { background:#f8fafc; border:1px solid var(--bordo); border-radius:5px; padding:8px; margin-top:6px; }
+.sp-form-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--grigio); display:block; margin-bottom:2px; }
+.sp-form input, .sp-form select {
+  width:100%; font-family:var(--font); font-size:11px;
+  padding:4px 7px; border:1px solid var(--bordo); border-radius:4px;
+  background:white; margin-bottom:5px; color:var(--testo);
+}
+.sp-btn-row { display:flex; gap:5px; }
+.sp-btn-ok { font-family:var(--font); font-size:10px; padding:5px 10px; background:#166534; color:white; border:none; border-radius:4px; cursor:pointer; flex:1; }
+.sp-btn-ok:hover { background:#14532d; }
+.sp-btn-cancel { font-family:var(--font); font-size:10px; padding:5px 8px; background:#f1f5f9; color:var(--grigio); border:1px solid var(--bordo); border-radius:4px; cursor:pointer; }
+.sp-footer { border-top:2px solid var(--bordo); padding:10px 12px; flex-shrink:0; }
+.sp-btn-nuovo { width:100%; font-family:var(--font); font-size:10px; padding:7px; border:1px dashed var(--accent); background:#eff6ff; color:var(--accent); border-radius:5px; cursor:pointer; font-weight:bold; }
+.sp-btn-nuovo:hover { background:#dbeafe; }
+.sp-new-form { margin-top:8px; }
+/* Voci sospesi nel giorno (sinistra) */
+.sp-day-row { display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:11px; }
+.sp-day-row .sp-day-desc { color:var(--grigio); flex:1; }
+.sp-day-row .sp-day-amt { font-family:var(--mono); font-weight:bold; color:var(--rosso); font-size:11px; }
+/* Form inline aggiunta sospeso nel pannello sinistro */
+.sp-add-inline { display:flex; gap:4px; margin-top:6px; align-items:center; }
+.sp-add-inline input[type="text"] { font-family:var(--font); font-size:11px; padding:4px 6px; border:1px solid var(--bordo); border-radius:4px; background:white; color:var(--testo); }
+.sp-add-inline .sp-ai-desc { flex:1; }
+.sp-add-inline .sp-ai-amt  { width:72px; font-family:var(--mono); text-align:right; }
+.sp-add-inline .sp-ai-btn  { font-family:var(--font); font-size:12px; padding:4px 8px; background:#1e293b; color:white; border:none; border-radius:4px; cursor:pointer; white-space:nowrap; }
+.sp-add-inline .sp-ai-btn:hover { background:#0f172a; }
+/* Rientri nel giorno (sinistra) */
+.rientro-row { display:flex; justify-content:space-between; align-items:center; padding:4px 7px; border-radius:5px; margin-bottom:3px; font-size:10px; }
+.rientro-row .rr-desc { flex:1; color:var(--grigio); }
+.rientro-row .rr-badge { font-size:8px; text-transform:uppercase; letter-spacing:.07em; font-weight:bold; margin-right:8px; padding:2px 5px; border-radius:3px; }
+.rientro-row .rr-amt { font-family:var(--mono); font-size:11px; font-weight:bold; }
+
+/* ─── MODALE IMPORTAZIONE ─── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.55); align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:white; border-radius:10px; width:520px; max-width:95vw;
+  max-height:85vh; overflow:hidden; display:flex; flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+}
+.modal-hdr {
+  background:#4c1d95; color:white; padding:14px 18px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-hdr h2 { font-size:14px; font-weight:normal; }
+.modal-hdr button {
+  background:none; border:none; color:white; font-size:20px;
+  cursor:pointer; line-height:1; padding:0 4px;
+}
+.modal-body { padding:18px; overflow-y:auto; flex:1; }
+.modal-footer { padding:12px 18px; border-top:1px solid #e2e8f0; display:flex; gap:8px; justify-content:flex-end; }
+.imp-step { margin-bottom:16px; }
+.imp-step h3 { font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:.07em; color:#64748b; margin-bottom:8px; }
+.imp-istruzioni {
+  background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;
+  padding:12px 14px; font-size:12px; line-height:1.7; color:#374151;
+}
+.imp-istruzioni strong { color:#1e293b; }
+.imp-istruzioni code {
+  background:#e0e7ff; color:#3730a3; padding:1px 5px;
+  border-radius:3px; font-size:11px;
+}
+.imp-preview {
+  background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;
+  padding:10px 14px; font-size:11px; font-family:'Courier New',monospace;
+  max-height:160px; overflow-y:auto; color:#374151;
+}
+.imp-preview .riga { padding:3px 0; border-bottom:1px solid #f1f5f9; }
+.imp-preview .riga:last-child { border-bottom:none; }
+.imp-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px;
+  padding:2px 8px; border-radius:99px; font-weight:bold; }
+.imp-ok  { background:#dcfce7; color:#166534; }
+.imp-warn { background:#fef9c3; color:#854d0e; }
+.imp-err  { background:#fee2e2; color:#991b1b; }
+.imp-counter { font-size:13px; font-weight:bold; color:#1e293b; margin-bottom:10px; }
+.btn-viola { background:#7c3aed; border-color:#7c3aed; color:white; }
+.btn-viola:hover { background:#6d28d9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Prima Nota di Cassa &mdash; <em>2026</em></h1>
+  <div class="header-right">
+    <div class="vista-sel">
+      <button class="vista-btn active" id="btnM" onclick="setVista('m')">Mensile</button>
+      <button class="vista-btn" id="btnR" onclick="setVista('r')">Riepilogo</button>
+    </div>
+    <button class="btn" onclick="importaJson()" title="Carica dati salvati (JSON)">📂 Carica</button>
+    <button class="btn" style="background:#7c3aed;border-color:#7c3aed;" onclick="importaExcel()" title="Importa da Numbers o Excel">📊 Importa</button>
+    <button class="btn btn-green" onclick="apriModalCommercialista()" title="Esporta il mese per il commercialista (CSV/Excel)">📤 Commercialista</button>
+    <button class="btn" style="background:#166534;border-color:#166534;" onclick="salvaJson()">💾 Salva JSON</button>
+    <button class="btn" style="background:#0e7490;border-color:#0e7490;" onclick="esportaHtmlStandalone()" title="Scarica l'app con i dati integrati — apribile su qualsiasi Mac">💻 Salva HTML</button>
+    <button class="btn" style="background:#991b1b;border-color:#991b1b;" onclick="cancellaAnno()" title="Cancella tutti i dati del 2026">🗑 Cancella anno</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="leggiJson(this)">
+    <input type="file" id="xlsInput" accept=".csv,.xlsx,.xls,.numbers" style="display:none" onchange="leggiExcel(this)">
+  </div>
+</div>
+
+<div style="background:#1e3a5f;color:#93c5fd;font-size:11px;padding:5px 18px;display:flex;align-items:center;gap:20px;font-family:Georgia,serif;">
+  <span>💾 Salvataggio automatico attivo — dati su disco in <code>prima_nota_data.json</code></span>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+    <label style="white-space:nowrap;color:#bfdbfe;">📅 Cassa riportata dal 2025:</label>
+    <input type="number" id="riportoAnnoInput" step="0.01" min="0" placeholder="0,00"
+      style="width:110px;padding:3px 6px;border-radius:4px;border:1px solid #3b82f6;
+             background:#0f2040;color:#e2e8f0;font-size:11px;text-align:right;"
+      onchange="impostaRiportoAnno(this.value)"
+      title="Contanti in cassa a fine 2025 — diventa il riporto iniziale del 2026">
+    <span style="color:#64748b;font-size:10px;">€</span>
+  </span>
+</div>
+<div class="mesi-bar" id="mesiBar"></div>
+
+<div class="kpi-bar">
+  <div class="kpi-cell"><div class="kpi-label">Mese</div><div class="kpi-val kv-blu" id="k0">—</div></div>
+  <div class="kpi-cell"><div class="kpi-label">Incasso lordo</div><div class="kpi-val kv-blu" id="k1">—</div></div>
+  <div class="kpi-cell"><div class="kpi-label">Storni tot.</div><div class="kpi-val kv-rosso" id="k2">—</div></div>
+  <div class="kpi-cell"><div class="kpi-label">Pagamenti contanti</div><div class="kpi-val kv-rosso" id="k3">—</div></div>
+  <div class="kpi-cell"><div class="kpi-label">Contanti fisici</div><div class="kpi-val" id="k4">—</div></div>
+</div>
+
+<div id="viewM" style="display:flex;">
+  <div class="main-layout" style="width:100%;">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="detail" id="detail">
+      <div class="empty-state">
+        <div class="ico">📋</div>
+        <h2>Seleziona un giorno dalla lista a sinistra</h2>
+        <p style="font-size:12px;">Clicca su qualsiasi data per aprire la scheda giornaliera.</p>
+      </div>
+    </div>
+    <div class="sospesi-panel" id="sospesoPanel">
+      <div class="sp-hdr">Sospesi aperti</div>
+      <div id="spList" class="sp-list"><div class="sp-vuoto">Nessun sospeso aperto</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="viewR" class="riep-wrap" style="display:none;">
+  <div class="riep-tbl">
+    <table>
+      <thead><tr>
+        <th style="text-align:left">Mese</th>
+        <th>Gg.</th>
+        <th>Incasso lordo</th>
+        <th>Storni digitali</th>
+        <th>Pag. contanti</th>
+        <th>Versamenti</th>
+        <th>Contanti fisici</th>
+      </tr></thead>
+      <tbody id="riepBody"></tbody>
+      <tfoot id="riepFoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- MODALE SELEZIONE MESE PER COMMERCIALISTA -->
+<div class="modal-overlay" id="modalCommercialista">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 style="margin:0;font-size:15px;">📤 Esporta per il commercialista</h2>
+      <button onclick="document.getElementById('modalCommercialista').classList.remove('open')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 14px;">Seleziona il mese da inviare. Verrà scaricato un file CSV apribile con Excel, pronto per il commercialista.</p>
+      <div id="commMesiGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+      <div id="commAnteprima" style="margin-top:16px;display:none;">
+        <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;font-size:10px;font-family:monospace;color:#94a3b8;white-space:pre;overflow-x:auto;max-height:200px;overflow-y:auto;" id="commAnteprimaText"></div>
+        <p style="font-size:10px;color:#64748b;margin:6px 0 0;">↑ Anteprima delle prime righe — il file completo ha tutti i giorni del mese.</p>
+      </div>
+    </div>
+    <div class="modal-footer" style="gap:8px;">
+      <button class="btn" style="color:#374151;" onclick="document.getElementById('modalCommercialista').classList.remove('open')">Annulla</button>
+      <button class="btn btn-green" id="btnScaricoComm" style="display:none;" onclick="scaricaCsvCommercialista()">⬇ Scarica CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE IMPORTAZIONE EXCEL/CSV/NUMBERS -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2>📊 Importa da Numbers / Excel</h2>
+      <button onclick="chiudiModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="imp-step">
+        <h3>Come preparare il file</h3>
+        <div class="imp-istruzioni">
+          <strong>Da Numbers (Mac) — importazione diretta:</strong><br>
+          Seleziona direttamente il file <code>.numbers</code> della Prima Nota — viene letto automaticamente dal server.<br><br>
+          <strong>Da Excel o CSV:</strong><br>
+          File → Salva come → <code>.csv</code> (con separatore punto e virgola) oppure <code>.xlsx</code><br><br>
+          <strong>Colonne riconosciute (CSV/Excel):</strong><br>
+          <code>DATA</code> &nbsp;·&nbsp; <code>INCASSO</code> / <code>ENTRATE</code> &nbsp;·&nbsp;
+          <code>CARTASI</code> / <code>POS</code> &nbsp;·&nbsp; <code>AMEX</code> &nbsp;·&nbsp;
+          <code>BANCOMAT</code> &nbsp;·&nbsp; <code>BONIFICI</code> &nbsp;·&nbsp;
+          <code>SOSPESI</code> &nbsp;·&nbsp; <code>NOTE</code> &nbsp;·&nbsp;
+          <code>DESCRIZIONE</code> &nbsp;·&nbsp; <code>VERSAMENTO</code>
+        </div>
+      </div>
+
+      <div class="imp-step">
+        <h3>Seleziona il file</h3>
+        <button class="btn btn-viola" style="font-size:13px;padding:8px 16px;"
+          onclick="document.getElementById('xlsInput').click()">
+          📁 Scegli file (.numbers / .csv / .xlsx / .xls)
+        </button>
+        <p style="font-size:11px;color:#6d28d9;margin-top:6px;">
+          ✨ I file .numbers vengono importati direttamente — nessuna conversione necessaria.
+        </p>
+      </div>
+
+      <div id="impPreviewArea" style="display:none;">
+        <div class="imp-step">
+          <h3>Anteprima dati riconosciuti</h3>
+          <div class="imp-counter" id="impCounter"></div>
+          <div class="imp-preview" id="impPreview"></div>
+        </div>
+        <div class="imp-step">
+          <h3>Modalità importazione</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;">
+              <input type="radio" name="impMode" value="merge" checked style="margin-top:2px;">
+              <div><strong>Unisci</strong> — aggiunge solo i giorni non ancora presenti (non sovrascrive dati già inseriti)</div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;">
+              <input type="radio" name="impMode" value="overwrite">
+              <div><strong>Sovrascrivi</strong> — sostituisce i giorni importati anche se hai già dati (attenzione!)</div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;">
+              <input type="radio" name="impMode" value="replace">
+              <div><strong>Ricomincia da zero</strong> — cancella tutti i dati esistenti e importa solo questo file</div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="color:#374151;" onclick="chiudiModal()">Annulla</button>
+      <button class="btn btn-viola" id="btnConfermaImport" style="display:none;"
+        onclick="confermaImport()">✅ Importa dati</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CALENDARIO_2026 = {"0": [{"iso": "2026-01-01", "d": 1, "wd": "Gio", "w": false}, {"iso": "2026-01-02", "d": 2, "wd": "Ven", "w": false}, {"iso": "2026-01-03", "d": 3, "wd": "Sab", "w": true}, {"iso": "2026-01-04", "d": 4, "wd": "Dom", "w": true}, {"iso": "2026-01-05", "d": 5, "wd": "Lun", "w": false}, {"iso": "2026-01-06", "d": 6, "wd": "Mar", "w": false}, {"iso": "2026-01-07", "d": 7, "wd": "Mer", "w": false}, {"iso": "2026-01-08", "d": 8, "wd": "Gio", "w": false}, {"iso": "2026-01-09", "d": 9, "wd": "Ven", "w": false}, {"iso": "2026-01-10", "d": 10, "wd": "Sab", "w": true}, {"iso": "2026-01-11", "d": 11, "wd": "Dom", "w": true}, {"iso": "2026-01-12", "d": 12, "wd": "Lun", "w": false}, {"iso": "2026-01-13", "d": 13, "wd": "Mar", "w": false}, {"iso": "2026-01-14", "d": 14, "wd": "Mer", "w": false}, {"iso": "2026-01-15", "d": 15, "wd": "Gio", "w": false}, {"iso": "2026-01-16", "d": 16, "wd": "Ven", "w": false}, {"iso": "2026-01-17", "d": 17, "wd": "Sab", "w": true}, {"iso": "2026-01-18", "d": 18, "wd": "Dom", "w": true}, {"iso": "2026-01-19", "d": 19, "wd": "Lun", "w": false}, {"iso": "2026-01-20", "d": 20, "wd": "Mar", "w": false}, {"iso": "2026-01-21", "d": 21, "wd": "Mer", "w": false}, {"iso": "2026-01-22", "d": 22, "wd": "Gio", "w": false}, {"iso": "2026-01-23", "d": 23, "wd": "Ven", "w": false}, {"iso": "2026-01-24", "d": 24, "wd": "Sab", "w": true}, {"iso": "2026-01-25", "d": 25, "wd": "Dom", "w": true}, {"iso": "2026-01-26", "d": 26, "wd": "Lun", "w": false}, {"iso": "2026-01-27", "d": 27, "wd": "Mar", "w": false}, {"iso": "2026-01-28", "d": 28, "wd": "Mer", "w": false}, {"iso": "2026-01-29", "d": 29, "wd": "Gio", "w": false}, {"iso": "2026-01-30", "d": 30, "wd": "Ven", "w": false}, {"iso": "2026-01-31", "d": 31, "wd": "Sab", "w": true}], "1": [{"iso": "2026-02-01", "d": 1, "wd": "Dom", "w": true}, {"iso": "2026-02-02", "d": 2, "wd": "Lun", "w": false}, {"iso": "2026-02-03", "d": 3, "wd": "Mar", "w": false}, {"iso": "2026-02-04", "d": 4, "wd": "Mer", "w": false}, {"iso": "2026-02-05", "d": 5, "wd": "Gio", "w": false}, {"iso": "2026-02-06", "d": 6, "wd": "Ven", "w": false}, {"iso": "2026-02-07", "d": 7, "wd": "Sab", "w": true}, {"iso": "2026-02-08", "d": 8, "wd": "Dom", "w": true}, {"iso": "2026-02-09", "d": 9, "wd": "Lun", "w": false}, {"iso": "2026-02-10", "d": 10, "wd": "Mar", "w": false}, {"iso": "2026-02-11", "d": 11, "wd": "Mer", "w": false}, {"iso": "2026-02-12", "d": 12, "wd": "Gio", "w": false}, {"iso": "2026-02-13", "d": 13, "wd": "Ven", "w": false}, {"iso": "2026-02-14", "d": 14, "wd": "Sab", "w": true}, {"iso": "2026-02-15", "d": 15, "wd": "Dom", "w": true}, {"iso": "2026-02-16", "d": 16, "wd": "Lun", "w": false}, {"iso": "2026-02-17", "d": 17, "wd": "Mar", "w": false}, {"iso": "2026-02-18", "d": 18, "wd": "Mer", "w": false}, {"iso": "2026-02-19", "d": 19, "wd": "Gio", "w": false}, {"iso": "2026-02-20", "d": 20, "wd": "Ven", "w": false}, {"iso": "2026-02-21", "d": 21, "wd": "Sab", "w": true}, {"iso": "2026-02-22", "d": 22, "wd": "Dom", "w": true}, {"iso": "2026-02-23", "d": 23, "wd": "Lun", "w": false}, {"iso": "2026-02-24", "d": 24, "wd": "Mar", "w": false}, {"iso": "2026-02-25", "d": 25, "wd": "Mer", "w": false}, {"iso": "2026-02-26", "d": 26, "wd": "Gio", "w": false}, {"iso": "2026-02-27", "d": 27, "wd": "Ven", "w": false}, {"iso": "2026-02-28", "d": 28, "wd": "Sab", "w": true}], "2": [{"iso": "2026-03-01", "d": 1, "wd": "Dom", "w": true}, {"iso": "2026-03-02", "d": 2, "wd": "Lun", "w": false}, {"iso": "2026-03-03", "d": 3, "wd": "Mar", "w": false}, {"iso": "2026-03-04", "d": 4, "wd": "Mer", "w": false}, {"iso": "2026-03-05", "d": 5, "wd": "Gio", "w": false}, {"iso": "2026-03-06", "d": 6, "wd": "Ven", "w": false}, {"iso": "2026-03-07", "d": 7, "wd": "Sab", "w": true}, {"iso": "2026-03-08", "d": 8, "wd": "Dom", "w": true}, {"iso": "2026-03-09", "d": 9, "wd": "Lun", "w": false}, {"iso": "2026-03-10", "d": 10, "wd": "Mar", "w": false}, {"iso": "2026-03-11", "d": 11, "wd": "Mer", "w": false}, {"iso": "2026-03-12", "d": 12, "wd": "Gio", "w": false}, {"iso": "2026-03-13", "d": 13, "wd": "Ven", "w": false}, {"iso": "2026-03-14", "d": 14, "wd": "Sab", "w": true}, {"iso": "2026-03-15", "d": 15, "wd": "Dom", "w": true}, {"iso": "2026-03-16", "d": 16, "wd": "Lun", "w": false}, {"iso": "2026-03-17", "d": 17, "wd": "Mar", "w": false}, {"iso": "2026-03-18", "d": 18, "wd": "Mer", "w": false}, {"iso": "2026-03-19", "d": 19, "wd": "Gio", "w": false}, {"iso": "2026-03-20", "d": 20, "wd": "Ven", "w": false}, {"iso": "2026-03-21", "d": 21, "wd": "Sab", "w": true}, {"iso": "2026-03-22", "d": 22, "wd": "Dom", "w": true}, {"iso": "2026-03-23", "d": 23, "wd": "Lun", "w": false}, {"iso": "2026-03-24", "d": 24, "wd": "Mar", "w": false}, {"iso": "2026-03-25", "d": 25, "wd": "Mer", "w": false}, {"iso": "2026-03-26", "d": 26, "wd": "Gio", "w": false}, {"iso": "2026-03-27", "d": 27, "wd": "Ven", "w": false}, {"iso": "2026-03-28", "d": 28, "wd": "Sab", "w": true}, {"iso": "2026-03-29", "d": 29, "wd": "Dom", "w": true}, {"iso": "2026-03-30", "d": 30, "wd": "Lun", "w": false}, {"iso": "2026-03-31", "d": 31, "wd": "Mar", "w": false}], "3": [{"iso": "2026-04-01", "d": 1, "wd": "Mer", "w": false}, {"iso": "2026-04-02", "d": 2, "wd": "Gio", "w": false}, {"iso": "2026-04-03", "d": 3, "wd": "Ven", "w": false}, {"iso": "2026-04-04", "d": 4, "wd": "Sab", "w": true}, {"iso": "2026-04-05", "d": 5, "wd": "Dom", "w": true}, {"iso": "2026-04-06", "d": 6, "wd": "Lun", "w": false}, {"iso": "2026-04-07", "d": 7, "wd": "Mar", "w": false}, {"iso": "2026-04-08", "d": 8, "wd": "Mer", "w": false}, {"iso": "2026-04-09", "d": 9, "wd": "Gio", "w": false}, {"iso": "2026-04-10", "d": 10, "wd": "Ven", "w": false}, {"iso": "2026-04-11", "d": 11, "wd": "Sab", "w": true}, {"iso": "2026-04-12", "d": 12, "wd": "Dom", "w": true}, {"iso": "2026-04-13", "d": 13, "wd": "Lun", "w": false}, {"iso": "2026-04-14", "d": 14, "wd": "Mar", "w": false}, {"iso": "2026-04-15", "d": 15, "wd": "Mer", "w": false}, {"iso": "2026-04-16", "d": 16, "wd": "Gio", "w": false}, {"iso": "2026-04-17", "d": 17, "wd": "Ven", "w": false}, {"iso": "2026-04-18", "d": 18, "wd": "Sab", "w": true}, {"iso": "2026-04-19", "d": 19, "wd": "Dom", "w": true}, {"iso": "2026-04-20", "d": 20, "wd": "Lun", "w": false}, {"iso": "2026-04-21", "d": 21, "wd": "Mar", "w": false}, {"iso": "2026-04-22", "d": 22, "wd": "Mer", "w": false}, {"iso": "2026-04-23", "d": 23, "wd": "Gio", "w": false}, {"iso": "2026-04-24", "d": 24, "wd": "Ven", "w": false}, {"iso": "2026-04-25", "d": 25, "wd": "Sab", "w": true}, {"iso": "2026-04-26", "d": 26, "wd": "Dom", "w": true}, {"iso": "2026-04-27", "d": 27, "wd": "Lun", "w": false}, {"iso": "2026-04-28", "d": 28, "wd": "Mar", "w": false}, {"iso": "2026-04-29", "d": 29, "wd": "Mer", "w": false}, {"iso": "2026-04-30", "d": 30, "wd": "Gio", "w": false}], "4": [{"iso": "2026-05-01", "d": 1, "wd": "Ven", "w": false}, {"iso": "2026-05-02", "d": 2, "wd": "Sab", "w": true}, {"iso": "2026-05-03", "d": 3, "wd": "Dom", "w": true}, {"iso": "2026-05-04", "d": 4, "wd": "Lun", "w": false}, {"iso": "2026-05-05", "d": 5, "wd": "Mar", "w": false}, {"iso": "2026-05-06", "d": 6, "wd": "Mer", "w": false}, {"iso": "2026-05-07", "d": 7, "wd": "Gio", "w": false}, {"iso": "2026-05-08", "d": 8, "wd": "Ven", "w": false}, {"iso": "2026-05-09", "d": 9, "wd": "Sab", "w": true}, {"iso": "2026-05-10", "d": 10, "wd": "Dom", "w": true}, {"iso": "2026-05-11", "d": 11, "wd": "Lun", "w": false}, {"iso": "2026-05-12", "d": 12, "wd": "Mar", "w": false}, {"iso": "2026-05-13", "d": 13, "wd": "Mer", "w": false}, {"iso": "2026-05-14", "d": 14, "wd": "Gio", "w": false}, {"iso": "2026-05-15", "d": 15, "wd": "Ven", "w": false}, {"iso": "2026-05-16", "d": 16, "wd": "Sab", "w": true}, {"iso": "2026-05-17", "d": 17, "wd": "Dom", "w": true}, {"iso": "2026-05-18", "d": 18, "wd": "Lun", "w": false}, {"iso": "2026-05-19", "d": 19, "wd": "Mar", "w": false}, {"iso": "2026-05-20", "d": 20, "wd": "Mer", "w": false}, {"iso": "2026-05-21", "d": 21, "wd": "Gio", "w": false}, {"iso": "2026-05-22", "d": 22, "wd": "Ven", "w": false}, {"iso": "2026-05-23", "d": 23, "wd": "Sab", "w": true}, {"iso": "2026-05-24", "d": 24, "wd": "Dom", "w": true}, {"iso": "2026-05-25", "d": 25, "wd": "Lun", "w": false}, {"iso": "2026-05-26", "d": 26, "wd": "Mar", "w": false}, {"iso": "2026-05-27", "d": 27, "wd": "Mer", "w": false}, {"iso": "2026-05-28", "d": 28, "wd": "Gio", "w": false}, {"iso": "2026-05-29", "d": 29, "wd": "Ven", "w": false}, {"iso": "2026-05-30", "d": 30, "wd": "Sab", "w": true}, {"iso": "2026-05-31", "d": 31, "wd": "Dom", "w": true}], "5": [{"iso": "2026-06-01", "d": 1, "wd": "Lun", "w": false}, {"iso": "2026-06-02", "d": 2, "wd": "Mar", "w": false}, {"iso": "2026-06-03", "d": 3, "wd": "Mer", "w": false}, {"iso": "2026-06-04", "d": 4, "wd": "Gio", "w": false}, {"iso": "2026-06-05", "d": 5, "wd": "Ven", "w": false}, {"iso": "2026-06-06", "d": 6, "wd": "Sab", "w": true}, {"iso": "2026-06-07", "d": 7, "wd": "Dom", "w": true}, {"iso": "2026-06-08", "d": 8, "wd": "Lun", "w": false}, {"iso": "2026-06-09", "d": 9, "wd": "Mar", "w": false}, {"iso": "2026-06-10", "d": 10, "wd": "Mer", "w": false}, {"iso": "2026-06-11", "d": 11, "wd": "Gio", "w": false}, {"iso": "2026-06-12", "d": 12, "wd": "Ven", "w": false}, {"iso": "2026-06-13", "d": 13, "wd": "Sab", "w": true}, {"iso": "2026-06-14", "d": 14, "wd": "Dom", "w": true}, {"iso": "2026-06-15", "d": 15, "wd": "Lun", "w": false}, {"iso": "2026-06-16", "d": 16, "wd": "Mar", "w": false}, {"iso": "2026-06-17", "d": 17, "wd": "Mer", "w": false}, {"iso": "2026-06-18", "d": 18, "wd": "Gio", "w": false}, {"iso": "2026-06-19", "d": 19, "wd": "Ven", "w": false}, {"iso": "2026-06-20", "d": 20, "wd": "Sab", "w": true}, {"iso": "2026-06-21", "d": 21, "wd": "Dom", "w": true}, {"iso": "2026-06-22", "d": 22, "wd": "Lun", "w": false}, {"iso": "2026-06-23", "d": 23, "wd": "Mar", "w": false}, {"iso": "2026-06-24", "d": 24, "wd": "Mer", "w": false}, {"iso": "2026-06-25", "d": 25, "wd": "Gio", "w": false}, {"iso": "2026-06-26", "d": 26, "wd": "Ven", "w": false}, {"iso": "2026-06-27", "d": 27, "wd": "Sab", "w": true}, {"iso": "2026-06-28", "d": 28, "wd": "Dom", "w": true}, {"iso": "2026-06-29", "d": 29, "wd": "Lun", "w": false}, {"iso": "2026-06-30", "d": 30, "wd": "Mar", "w": false}], "6": [{"iso": "2026-07-01", "d": 1, "wd": "Mer", "w": false}, {"iso": "2026-07-02", "d": 2, "wd": "Gio", "w": false}, {"iso": "2026-07-03", "d": 3, "wd": "Ven", "w": false}, {"iso": "2026-07-04", "d": 4, "wd": "Sab", "w": true}, {"iso": "2026-07-05", "d": 5, "wd": "Dom", "w": true}, {"iso": "2026-07-06", "d": 6, "wd": "Lun", "w": false}, {"iso": "2026-07-07", "d": 7, "wd": "Mar", "w": false}, {"iso": "2026-07-08", "d": 8, "wd": "Mer", "w": false}, {"iso": "2026-07-09", "d": 9, "wd": "Gio", "w": false}, {"iso": "2026-07-10", "d": 10, "wd": "Ven", "w": false}, {"iso": "2026-07-11", "d": 11, "wd": "Sab", "w": true}, {"iso": "2026-07-12", "d": 12, "wd": "Dom", "w": true}, {"iso": "2026-07-13", "d": 13, "wd": "Lun", "w": false}, {"iso": "2026-07-14", "d": 14, "wd": "Mar", "w": false}, {"iso": "2026-07-15", "d": 15, "wd": "Mer", "w": false}, {"iso": "2026-07-16", "d": 16, "wd": "Gio", "w": false}, {"iso": "2026-07-17", "d": 17, "wd": "Ven", "w": false}, {"iso": "2026-07-18", "d": 18, "wd": "Sab", "w": true}, {"iso": "2026-07-19", "d": 19, "wd": "Dom", "w": true}, {"iso": "2026-07-20", "d": 20, "wd": "Lun", "w": false}, {"iso": "2026-07-21", "d": 21, "wd": "Mar", "w": false}, {"iso": "2026-07-22", "d": 22, "wd": "Mer", "w": false}, {"iso": "2026-07-23", "d": 23, "wd": "Gio", "w": false}, {"iso": "2026-07-24", "d": 24, "wd": "Ven", "w": false}, {"iso": "2026-07-25", "d": 25, "wd": "Sab", "w": true}, {"iso": "2026-07-26", "d": 26, "wd": "Dom", "w": true}, {"iso": "2026-07-27", "d": 27, "wd": "Lun", "w": false}, {"iso": "2026-07-28", "d": 28, "wd": "Mar", "w": false}, {"iso": "2026-07-29", "d": 29, "wd": "Mer", "w": false}, {"iso": "2026-07-30", "d": 30, "wd": "Gio", "w": false}, {"iso": "2026-07-31", "d": 31, "wd": "Ven", "w": false}], "7": [{"iso": "2026-08-01", "d": 1, "wd": "Sab", "w": true}, {"iso": "2026-08-02", "d": 2, "wd": "Dom", "w": true}, {"iso": "2026-08-03", "d": 3, "wd": "Lun", "w": false}, {"iso": "2026-08-04", "d": 4, "wd": "Mar", "w": false}, {"iso": "2026-08-05", "d": 5, "wd": "Mer", "w": false}, {"iso": "2026-08-06", "d": 6, "wd": "Gio", "w": false}, {"iso": "2026-08-07", "d": 7, "wd": "Ven", "w": false}, {"iso": "2026-08-08", "d": 8, "wd": "Sab", "w": true}, {"iso": "2026-08-09", "d": 9, "wd": "Dom", "w": true}, {"iso": "2026-08-10", "d": 10, "wd": "Lun", "w": false}, {"iso": "2026-08-11", "d": 11, "wd": "Mar", "w": false}, {"iso": "2026-08-12", "d": 12, "wd": "Mer", "w": false}, {"iso": "2026-08-13", "d": 13, "wd": "Gio", "w": false}, {"iso": "2026-08-14", "d": 14, "wd": "Ven", "w": false}, {"iso": "2026-08-15", "d": 15, "wd": "Sab", "w": true}, {"iso": "2026-08-16", "d": 16, "wd": "Dom", "w": true}, {"iso": "2026-08-17", "d": 17, "wd": "Lun", "w": false}, {"iso": "2026-08-18", "d": 18, "wd": "Mar", "w": false}, {"iso": "2026-08-19", "d": 19, "wd": "Mer", "w": false}, {"iso": "2026-08-20", "d": 20, "wd": "Gio", "w": false}, {"iso": "2026-08-21", "d": 21, "wd": "Ven", "w": false}, {"iso": "2026-08-22", "d": 22, "wd": "Sab", "w": true}, {"iso": "2026-08-23", "d": 23, "wd": "Dom", "w": true}, {"iso": "2026-08-24", "d": 24, "wd": "Lun", "w": false}, {"iso": "2026-08-25", "d": 25, "wd": "Mar", "w": false}, {"iso": "2026-08-26", "d": 26, "wd": "Mer", "w": false}, {"iso": "2026-08-27", "d": 27, "wd": "Gio", "w": false}, {"iso": "2026-08-28", "d": 28, "wd": "Ven", "w": false}, {"iso": "2026-08-29", "d": 29, "wd": "Sab", "w": true}, {"iso": "2026-08-30", "d": 30, "wd": "Dom", "w": true}, {"iso": "2026-08-31", "d": 31, "wd": "Lun", "w": false}], "8": [{"iso": "2026-09-01", "d": 1, "wd": "Mar", "w": false}, {"iso": "2026-09-02", "d": 2, "wd": "Mer", "w": false}, {"iso": "2026-09-03", "d": 3, "wd": "Gio", "w": false}, {"iso": "2026-09-04", "d": 4, "wd": "Ven", "w": false}, {"iso": "2026-09-05", "d": 5, "wd": "Sab", "w": true}, {"iso": "2026-09-06", "d": 6, "wd": "Dom", "w": true}, {"iso": "2026-09-07", "d": 7, "wd": "Lun", "w": false}, {"iso": "2026-09-08", "d": 8, "wd": "Mar", "w": false}, {"iso": "2026-09-09", "d": 9, "wd": "Mer", "w": false}, {"iso": "2026-09-10", "d": 10, "wd": "Gio", "w": false}, {"iso": "2026-09-11", "d": 11, "wd": "Ven", "w": false}, {"iso": "2026-09-12", "d": 12, "wd": "Sab", "w": true}, {"iso": "2026-09-13", "d": 13, "wd": "Dom", "w": true}, {"iso": "2026-09-14", "d": 14, "wd": "Lun", "w": false}, {"iso": "2026-09-15", "d": 15, "wd": "Mar", "w": false}, {"iso": "2026-09-16", "d": 16, "wd": "Mer", "w": false}, {"iso": "2026-09-17", "d": 17, "wd": "Gio", "w": false}, {"iso": "2026-09-18", "d": 18, "wd": "Ven", "w": false}, {"iso": "2026-09-19", "d": 19, "wd": "Sab", "w": true}, {"iso": "2026-09-20", "d": 20, "wd": "Dom", "w": true}, {"iso": "2026-09-21", "d": 21, "wd": "Lun", "w": false}, {"iso": "2026-09-22", "d": 22, "wd": "Mar", "w": false}, {"iso": "2026-09-23", "d": 23, "wd": "Mer", "w": false}, {"iso": "2026-09-24", "d": 24, "wd": "Gio", "w": false}, {"iso": "2026-09-25", "d": 25, "wd": "Ven", "w": false}, {"iso": "2026-09-26", "d": 26, "wd": "Sab", "w": true}, {"iso": "2026-09-27", "d": 27, "wd": "Dom", "w": true}, {"iso": "2026-09-28", "d": 28, "wd": "Lun", "w": false}, {"iso": "2026-09-29", "d": 29, "wd": "Mar", "w": false}, {"iso": "2026-09-30", "d": 30, "wd": "Mer", "w": false}], "9": [{"iso": "2026-10-01", "d": 1, "wd": "Gio", "w": false}, {"iso": "2026-10-02", "d": 2, "wd": "Ven", "w": false}, {"iso": "2026-10-03", "d": 3, "wd": "Sab", "w": true}, {"iso": "2026-10-04", "d": 4, "wd": "Dom", "w": true}, {"iso": "2026-10-05", "d": 5, "wd": "Lun", "w": false}, {"iso": "2026-10-06", "d": 6, "wd": "Mar", "w": false}, {"iso": "2026-10-07", "d": 7, "wd": "Mer", "w": false}, {"iso": "2026-10-08", "d": 8, "wd": "Gio", "w": false}, {"iso": "2026-10-09", "d": 9, "wd": "Ven", "w": false}, {"iso": "2026-10-10", "d": 10, "wd": "Sab", "w": true}, {"iso": "2026-10-11", "d": 11, "wd": "Dom", "w": true}, {"iso": "2026-10-12", "d": 12, "wd": "Lun", "w": false}, {"iso": "2026-10-13", "d": 13, "wd": "Mar", "w": false}, {"iso": "2026-10-14", "d": 14, "wd": "Mer", "w": false}, {"iso": "2026-10-15", "d": 15, "wd": "Gio", "w": false}, {"iso": "2026-10-16", "d": 16, "wd": "Ven", "w": false}, {"iso": "2026-10-17", "d": 17, "wd": "Sab", "w": true}, {"iso": "2026-10-18", "d": 18, "wd": "Dom", "w": true}, {"iso": "2026-10-19", "d": 19, "wd": "Lun", "w": false}, {"iso": "2026-10-20", "d": 20, "wd": "Mar", "w": false}, {"iso": "2026-10-21", "d": 21, "wd": "Mer", "w": false}, {"iso": "2026-10-22", "d": 22, "wd": "Gio", "w": false}, {"iso": "2026-10-23", "d": 23, "wd": "Ven", "w": false}, {"iso": "2026-10-24", "d": 24, "wd": "Sab", "w": true}, {"iso": "2026-10-25", "d": 25, "wd": "Dom", "w": true}, {"iso": "2026-10-26", "d": 26, "wd": "Lun", "w": false}, {"iso": "2026-10-27", "d": 27, "wd": "Mar", "w": false}, {"iso": "2026-10-28", "d": 28, "wd": "Mer", "w": false}, {"iso": "2026-10-29", "d": 29, "wd": "Gio", "w": false}, {"iso": "2026-10-30", "d": 30, "wd": "Ven", "w": false}, {"iso": "2026-10-31", "d": 31, "wd": "Sab", "w": true}], "10": [{"iso": "2026-11-01", "d": 1, "wd": "Dom", "w": true}, {"iso": "2026-11-02", "d": 2, "wd": "Lun", "w": false}, {"iso": "2026-11-03", "d": 3, "wd": "Mar", "w": false}, {"iso": "2026-11-04", "d": 4, "wd": "Mer", "w": false}, {"iso": "2026-11-05", "d": 5, "wd": "Gio", "w": false}, {"iso": "2026-11-06", "d": 6, "wd": "Ven", "w": false}, {"iso": "2026-11-07", "d": 7, "wd": "Sab", "w": true}, {"iso": "2026-11-08", "d": 8, "wd": "Dom", "w": true}, {"iso": "2026-11-09", "d": 9, "wd": "Lun", "w": false}, {"iso": "2026-11-10", "d": 10, "wd": "Mar", "w": false}, {"iso": "2026-11-11", "d": 11, "wd": "Mer", "w": false}, {"iso": "2026-11-12", "d": 12, "wd": "Gio", "w": false}, {"iso": "2026-11-13", "d": 13, "wd": "Ven", "w": false}, {"iso": "2026-11-14", "d": 14, "wd": "Sab", "w": true}, {"iso": "2026-11-15", "d": 15, "wd": "Dom", "w": true}, {"iso": "2026-11-16", "d": 16, "wd": "Lun", "w": false}, {"iso": "2026-11-17", "d": 17, "wd": "Mar", "w": false}, {"iso": "2026-11-18", "d": 18, "wd": "Mer", "w": false}, {"iso": "2026-11-19", "d": 19, "wd": "Gio", "w": false}, {"iso": "2026-11-20", "d": 20, "wd": "Ven", "w": false}, {"iso": "2026-11-21", "d": 21, "wd": "Sab", "w": true}, {"iso": "2026-11-22", "d": 22, "wd": "Dom", "w": true}, {"iso": "2026-11-23", "d": 23, "wd": "Lun", "w": false}, {"iso": "2026-11-24", "d": 24, "wd": "Mar", "w": false}, {"iso": "2026-11-25", "d": 25, "wd": "Mer", "w": false}, {"iso": "2026-11-26", "d": 26, "wd": "Gio", "w": false}, {"iso": "2026-11-27", "d": 27, "wd": "Ven", "w": false}, {"iso": "2026-11-28", "d": 28, "wd": "Sab", "w": true}, {"iso": "2026-11-29", "d": 29, "wd": "Dom", "w": true}, {"iso": "2026-11-30", "d": 30, "wd": "Lun", "w": false}], "11": [{"iso": "2026-12-01", "d": 1, "wd": "Mar", "w": false}, {"iso": "2026-12-02", "d": 2, "wd": "Mer", "w": false}, {"iso": "2026-12-03", "d": 3, "wd": "Gio", "w": false}, {"iso": "2026-12-04", "d": 4, "wd": "Ven", "w": false}, {"iso": "2026-12-05", "d": 5, "wd": "Sab", "w": true}, {"iso": "2026-12-06", "d": 6, "wd": "Dom", "w": true}, {"iso": "2026-12-07", "d": 7, "wd": "Lun", "w": false}, {"iso": "2026-12-08", "d": 8, "wd": "Mar", "w": false}, {"iso": "2026-12-09", "d": 9, "wd": "Mer", "w": false}, {"iso": "2026-12-10", "d": 10, "wd": "Gio", "w": false}, {"iso": "2026-12-11", "d": 11, "wd": "Ven", "w": false}, {"iso": "2026-12-12", "d": 12, "wd": "Sab", "w": true}, {"iso": "2026-12-13", "d": 13, "wd": "Dom", "w": true}, {"iso": "2026-12-14", "d": 14, "wd": "Lun", "w": false}, {"iso": "2026-12-15", "d": 15, "wd": "Mar", "w": false}, {"iso": "2026-12-16", "d": 16, "wd": "Mer", "w": false}, {"iso": "2026-12-17", "d": 17, "wd": "Gio", "w": false}, {"iso": "2026-12-18", "d": 18, "wd": "Ven", "w": false}, {"iso": "2026-12-19", "d": 19, "wd": "Sab", "w": true}, {"iso": "2026-12-20", "d": 20, "wd": "Dom", "w": true}, {"iso": "2026-12-21", "d": 21, "wd": "Lun", "w": false}, {"iso": "2026-12-22", "d": 22, "wd": "Mar", "w": false}, {"iso": "2026-12-23", "d": 23, "wd": "Mer", "w": false}, {"iso": "2026-12-24", "d": 24, "wd": "Gio", "w": false}, {"iso": "2026-12-25", "d": 25, "wd": "Ven", "w": false}, {"iso": "2026-12-26", "d": 26, "wd": "Sab", "w": true}, {"iso": "2026-12-27", "d": 27, "wd": "Dom", "w": true}, {"iso": "2026-12-28", "d": 28, "wd": "Lun", "w": false}, {"iso": "2026-12-29", "d": 29, "wd": "Mar", "w": false}, {"iso": "2026-12-30", "d": 30, "wd": "Mer", "w": false}, {"iso": "2026-12-31", "d": 31, "wd": "Gio", "w": false}]};
+const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
+              "Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+
+// ══════════════════════════════════════════════════
+// STRUTTURA DATI PER OGNI GIORNATA
+// d[iso] = {
+//   note: "", ricevuta: "",
+//   incassoLordo: number,
+//   ricevute: [{id, desc, importo}],   ← scontrini / ricevute fiscali
+//   fattDal:  string,                  ← fatture dal n°
+//   fattAl:   string,                  ← fatture al n°
+//   fattNote: string,                  ← note sulle fatture (es. da spostare)
+//   fattImporto: number,               ← importo totale fatture
+//   pos:      [{id, desc, importo}],   ← pagamenti POS
+//   bonifici: [{id, desc, importo}],   ← pagamenti bonifico
+//   sospesi:  [{id, desc, importo}],   ← sospesi
+//   extra:    [{id, desc, importo}],   ← campo libero aggiuntivo
+//   pagCont:  [{id, desc, importo}],   ← pagamenti in contanti
+//   versamenti:[{id, desc, importo}],  ← versamenti banca
+// }
+// ══════════════════════════════════════════════════
+
+let meseAt = new Date().getMonth();
+let isoAt  = null;
+let vista  = 'm';
+let D = {};
+
+// ─── Persistenza server (automatica, su disco) ────────────
+// Il server Flask salva sempre prima_nota_data.json nella cartella dell'app.
+// Ad ogni modifica e alla chiusura del browser i dati vengono inviati al server.
+
+function salvaSuServer() {
+  if (window.location.protocol === 'file:') return;
+  const payload = JSON.stringify({ dati: D });
+  // sendBeacon è garantito anche su beforeunload
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/api/prima-nota/salva',
+      new Blob([payload], { type: 'application/json' }));
+  } else {
+    fetch('/api/prima-nota/salva', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    }).catch(() => {});
+  }
+}
+
+// Funzione unica di salvataggio: server + localStorage (backup)
+function salvaDati() {
+  try { localStorage.setItem('pnc2026', JSON.stringify(D)); } catch(e) {}
+  salvaSuServer();
+}
+
+// ─── Salvataggio manuale su FILE JSON (Download) ──────────
+// Usa "Esporta HTML standalone" per una copia portabile.
+
+function salvaJson() {
+  const payload = {
+    versione: '2026-v1',
+    salvato: new Date().toISOString(),
+    dati: D
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'prima_nota_2026_dati.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  salvaDati();
+  notif('💾 File salvato in Download');
+}
+
+function importaJson() {
+  document.getElementById('fileInput').click();
+}
+
+function leggiJson(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const payload = JSON.parse(e.target.result);
+      // Supporta sia il formato nuovo {versione, dati} che un plain object
+      D = payload.dati || payload;
+      salvaDati();
+      _invalidaCache();
+      renderAll();
+      notif('✅ Dati caricati: ' + Object.keys(D).length + ' giornate');
+    } catch(err) {
+      notif('⚠️ File non valido: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value = ''; // reset per poter ricaricare lo stesso file
+}
+
+// ══════════════════════════════════════════════════
+// IMPORTAZIONE DA EXCEL / CSV / NUMBERS-EXPORT
+// ══════════════════════════════════════════════════
+
+let _importBuffer = []; // righe parsed in attesa di conferma
+
+function importaExcel() {
+  document.getElementById('modalImport').classList.add('open');
+}
+function chiudiModal() {
+  document.getElementById('modalImport').classList.remove('open');
+  _importBuffer = [];
+  document.getElementById('impPreviewArea').style.display = 'none';
+  document.getElementById('btnConfermaImport').style.display = 'none';
+  document.getElementById('xlsInput').value = '';
+}
+
+function leggiExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const name = file.name.toLowerCase();
+  const reader = new FileReader();
+
+  if (name.endsWith('.csv') || name.endsWith('.txt')) {
+    reader.onload = e => parseCSV(e.target.result);
+    reader.readAsText(file, 'UTF-8');
+  } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+    reader.onload = e => parseXLSX(e.target.result);
+    reader.readAsArrayBuffer(file);
+  } else if (name.endsWith('.numbers')) {
+    leggiNumbers(file);
+  } else {
+    notif('⚠️ Formato non supportato. Usa .numbers, CSV o Excel.');
+  }
+}
+
+async function leggiNumbers(file) {
+  if (window.location.protocol === 'file:') {
+    notif('⚠️ Importazione .numbers disponibile solo con il server Flask (versione desktop).');
+    return;
+  }
+  notif('⏳ Lettura file Numbers in corso…');
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const resp = await fetch('/api/prima-nota/parse-numbers', {
+      method: 'POST', body: fd
+    });
+    const data = await resp.json();
+    if (!data.ok) { notif('⚠️ Errore: ' + data.errore); return; }
+    _importBuffer = data.giorni;
+    mostraAnteprimaNumbers(data.giorni);
+    notif(`✅ Letti ${data.giorni.length} giorni dal file. Scorri in basso e clicca "✅ Importa dati" per confermare.`);
+  } catch(e) {
+    notif('⚠️ Server Prima Nota non raggiungibile. Apri l\'app dal desktop (Prima Nota 2026) e riprova.');
+  }
+}
+
+function mostraAnteprimaNumbers(giorni) {
+  document.getElementById('impPreviewArea').style.display = 'block';
+  document.getElementById('btnConfermaImport').style.display = 'inline-block';
+  document.getElementById('impCounter').innerHTML =
+    `<span class="imp-badge imp-ok">✅ ${giorni.length} giornate lette dal file Numbers</span>`;
+  const preview = document.getElementById('impPreview');
+  preview.innerHTML = giorni.slice(0, 20).map(g => {
+    const pos = g.pos.reduce((s,p) => s + p.importo, 0);
+    return `<div class="riga">
+      <strong>${g.iso}</strong>&nbsp;&nbsp;
+      Lordo: <strong>€${g.incassoLordo.toFixed(2)}</strong>
+      ${pos > 0 ? `&nbsp;·&nbsp;POS: €${pos.toFixed(2)}` : ''}
+      ${g.sospesi.length > 0 ? `&nbsp;·&nbsp;Sosp: €${g.sospesi.reduce((s,x)=>s+x.importo,0).toFixed(2)}` : ''}
+    </div>`;
+  }).join('') + (giorni.length > 20 ? `<div class="riga" style="color:#94a3b8;">… e altre ${giorni.length - 20} giornate</div>` : '');
+}
+
+// ─── Parser CSV ──────────────────────────────────
+function parseCSV(text) {
+  // Rileva separatore: ; o ,
+  const sep = (text.split(';').length > text.split(',').length) ? ';' : ',';
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) { notif('⚠️ File CSV vuoto o non valido'); return; }
+
+  // Prima riga = intestazioni
+  const hdrs = lines[0].split(sep).map(h => h.replace(/^["']|["']$/g,'').trim().toUpperCase());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = splitCSVLine(lines[i], sep);
+    const obj = {};
+    hdrs.forEach((h, j) => { obj[h] = (vals[j]||'').replace(/^["']|["']$/g,'').trim(); });
+    rows.push(obj);
+  }
+  elaboraRighe(rows, hdrs);
+}
+
+function splitCSVLine(line, sep) {
+  // Gestisce valori tra virgolette con separatori interni
+  const res = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"' || c === "'") { inQ = !inQ; }
+    else if (c === sep && !inQ) { res.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  res.push(cur);
+  return res;
+}
+
+// ─── Parser XLSX (puro JS, senza librerie) ───────
+// Legge solo il foglio attivo usando XML interno dello zip
+function parseXLSX(buffer) {
+  // XLSX è uno zip. Usiamo FileReader su un Blob per accedere ai file XML.
+  // Approccio: leggiamo il file come testo cercando i valori XML direttamente.
+  try {
+    const bytes = new Uint8Array(buffer);
+    // Cerca la signature PK (zip) e prova a estrarre sharedStrings e sheet1
+    // Per semplicità, convertiamo in CSV tramite un canvas API-free approach:
+    // Leggiamo tutti i valori numerici e stringhe dal XML raw
+    const decoder = new TextDecoder('utf-8');
+    let text = '';
+    // Trova le sezioni ZIP: cerca 'xl/worksheets/sheet1.xml' e 'xl/sharedStrings.xml'
+    const zipText = decoder.decode(bytes);
+
+    // Estrai sharedStrings
+    const ssMatch = zipText.match(/sharedStrings\.xml[^<]*?<sst[^>]*>([\s\S]*?)<\/sst>/);
+    const sharedStrings = [];
+    if (ssMatch) {
+      const siMatches = ssMatch[1].matchAll(/<si>([\s\S]*?)<\/si>/g);
+      for (const m of siMatches) {
+        const tMatches = [...m[1].matchAll(/<t[^>]*>([^<]*)<\/t>/g)];
+        sharedStrings.push(tMatches.map(t => t[1]).join(''));
+      }
+    }
+
+    // Estrai sheet1
+    const sheetMatch = zipText.match(/sheet1\.xml[^<]*?<worksheet[\s\S]*?<sheetData>([\s\S]*?)<\/sheetData>/);
+    if (!sheetMatch) {
+      notif('⚠️ Impossibile leggere il foglio Excel. Prova a salvare come CSV.');
+      return;
+    }
+
+    const rows = [];
+    const rowMatches = sheetMatch[1].matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g);
+    for (const rowM of rowMatches) {
+      const cells = [];
+      const cellMatches = rowM[1].matchAll(/<c[^>]*r="([A-Z]+)\d+"[^>]*(?:t="([^"]*)")?[^>]*>[\s\S]*?<v>([^<]*)<\/v>[\s\S]*?<\/c>/g);
+      const cellMap = {};
+      for (const cm of cellMatches) {
+        const col = cm[1]; const type = cm[2]||''; const val = cm[3]||'';
+        if (type === 's') { cellMap[col] = sharedStrings[parseInt(val)]||''; }
+        else if (type === 'd') { cellMap[col] = val; }
+        else { cellMap[col] = val; }
+      }
+      // Converti colonne A,B,C... in array
+      if (Object.keys(cellMap).length > 0) {
+        const maxCol = Object.keys(cellMap).reduce((m, c) => colIdx(c) > colIdx(m) ? c : m);
+        const arr = [];
+        for (let i = 0; i <= colIdx(maxCol); i++) {
+          arr.push(cellMap[colFromIdx(i)]||'');
+        }
+        rows.push(arr);
+      }
+    }
+
+    if (rows.length < 2) { notif('⚠️ Foglio Excel vuoto.'); return; }
+    const hdrs = rows[0].map(h => String(h).toUpperCase().trim());
+    const objRows = rows.slice(1).map(r => {
+      const obj = {};
+      hdrs.forEach((h, i) => { obj[h] = String(r[i]||'').trim(); });
+      return obj;
+    });
+    elaboraRighe(objRows, hdrs);
+  } catch(e) {
+    notif('⚠️ Errore lettura Excel: ' + e.message + '. Prova CSV.');
+  }
+}
+
+function colIdx(col) {
+  let n = 0;
+  for (let i = 0; i < col.length; i++) n = n * 26 + col.charCodeAt(i) - 64;
+  return n - 1;
+}
+function colFromIdx(i) {
+  let s = '';
+  i++;
+  while (i > 0) { s = String.fromCharCode(((i-1)%26)+65) + s; i = Math.floor((i-1)/26); }
+  return s;
+}
+
+// ─── Mappa colonne → struttura nostra ────────────
+// Riconosce sia il formato del Numbers originale che formati generici
+function trovaColonna(hdrs, ...nomi) {
+  for (const nome of nomi) {
+    const idx = hdrs.findIndex(h => h.includes(nome.toUpperCase()));
+    if (idx >= 0) return hdrs[idx];
+  }
+  return null;
+}
+
+function parseNum(s) {
+  if (!s) return 0;
+  // Gestisce sia 1.234,56 (italiano) che 1,234.56 (inglese) e 1234.56
+  const clean = String(s).replace(/[€\s]/g,'');
+  // Se ha sia . che , — quello più a destra è il decimale
+  const dotIdx = clean.lastIndexOf('.');
+  const comIdx = clean.lastIndexOf(',');
+  let normalized;
+  if (dotIdx > comIdx) {
+    normalized = clean.replace(/,/g,''); // formato inglese: 1,234.56
+  } else if (comIdx > dotIdx) {
+    normalized = clean.replace(/\./g,'').replace(',','.'); // formato italiano: 1.234,56
+  } else {
+    normalized = clean;
+  }
+  return parseFloat(normalized) || 0;
+}
+
+function parseData(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  // Prova formati: YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, serial Excel
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(s)) {
+    const parts = s.split(/[\/\-]/);
+    return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+  }
+  if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2}$/.test(s)) {
+    const parts = s.split(/[\/\-]/);
+    const y = parseInt(parts[2]) + (parseInt(parts[2]) < 50 ? 2000 : 1900);
+    return `${y}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+  }
+  // Serial Excel (numero di giorni dal 1900-01-00)
+  if (/^\d{4,5}$/.test(s)) {
+    const d = new Date(1900, 0, parseInt(s) - 1);
+    if (!isNaN(d)) return d.toISOString().slice(0,10);
+  }
+  return null;
+}
+
+function elaboraRighe(rows, hdrs) {
+  // Mappa le intestazioni alle colonne della nostra struttura
+  const COL = {
+    data:       trovaColonna(hdrs, 'DATA','DATE'),
+    nota:       trovaColonna(hdrs, 'DESCRIZIONE','NOTE','DESC','OPERAZIONE'),
+    lordo:      trovaColonna(hdrs, 'INCASSO','ENTRATE','LORDO','INCASSO LORDO','O DEL GIORNO','CONTANTI'),
+    cartasi:    trovaColonna(hdrs, 'CARTASI','CARTE','POS','CARTASÌ'),
+    amex:       trovaColonna(hdrs, 'AMEX'),
+    bancomat:   trovaColonna(hdrs, 'BANCOMAT'),
+    bonifici:   trovaColonna(hdrs, 'BONIFICI','BONIFICO','PARTITE','FUORI CASSA','DARE'),
+    sospesi:    trovaColonna(hdrs, 'SOSPESI','SOSPESO'),
+    versamento: trovaColonna(hdrs, 'VERSAMENTO','VERS'),
+    pagCont:    trovaColonna(hdrs, 'PAG CONTANTI','PAG. CONTANTI','PAGAMENTI CONTANTI','USCITE'),
+    ric:        trovaColonna(hdrs, 'RIC N','RICEVUTA','RIC.N'),
+  };
+
+  const risultati = [];
+  let ultimaData = null;
+
+  for (const row of rows) {
+    // La data può essere in continuazione dalla riga precedente (celle unite Numbers)
+    const rawData = COL.data ? row[COL.data] : '';
+    const iso = parseData(rawData) || ultimaData;
+    if (!iso) continue; // riga senza data e senza data precedente: salta
+    ultimaData = iso;
+
+    // Verifica che la data sia nel 2026
+    if (!iso.startsWith('2026-')) continue;
+
+    const lordo = COL.lordo ? parseNum(row[COL.lordo]) : 0;
+    if (lordo === 0) {
+      // Potrebbe essere una riga di dettaglio (pagamento/versamento) dello stesso giorno
+      // Tentiamo di aggiungerla al giorno corrente
+      const ver = COL.versamento ? parseNum(row[COL.versamento]) : 0;
+      const pag = COL.pagCont ? parseNum(row[COL.pagCont]) : 0;
+      const nota = COL.nota ? row[COL.nota] : '';
+      if ((ver > 0 || pag > 0) && nota) {
+        // Aggiungiamo al risultato dell'ultimo giorno
+        const last = risultati.find(r => r.iso === iso);
+        if (last) {
+          if (ver > 0) last.versamenti.push({desc: nota, importo: ver});
+          if (pag > 0) last.pagCont.push({desc: nota, importo: pag});
+        }
+      }
+      continue;
+    }
+
+    // Costruiamo la struttura del giorno
+    const g = {
+      iso,
+      note:        COL.nota       ? row[COL.nota]       : '',
+      ricevuta:    COL.ric        ? row[COL.ric]        : '',
+      incassoLordo: lordo,
+      ricevute:    [],
+      pos:         [],
+      bonifici:    [],
+      sospesi:     [],
+      extra:       [],
+      pagCont:     [],
+      versamenti:  [],
+    };
+
+    // POS / Cartasì
+    const posV = COL.cartasi ? parseNum(row[COL.cartasi]) : 0;
+    if (posV > 0) g.pos.push({desc: 'POS / Cartasì', importo: posV});
+    // Amex
+    const amexV = COL.amex ? parseNum(row[COL.amex]) : 0;
+    if (amexV > 0) g.pos.push({desc: 'Amex', importo: amexV});
+    // Bancomat
+    const bancV = COL.bancomat ? parseNum(row[COL.bancomat]) : 0;
+    if (bancV > 0) g.pos.push({desc: 'Bancomat', importo: bancV});
+    // Bonifici
+    const bonV = COL.bonifici ? parseNum(row[COL.bonifici]) : 0;
+    if (bonV > 0) g.bonifici.push({desc: row[COL.nota]||'Bonifico', importo: bonV});
+    // Sospesi
+    const sosV = COL.sospesi ? parseNum(row[COL.sospesi]) : 0;
+    if (sosV > 0) g.sospesi.push({desc: row[COL.nota]||'Sospeso', importo: sosV});
+    // Versamento
+    const verV = COL.versamento ? parseNum(row[COL.versamento]) : 0;
+    if (verV > 0) g.versamenti.push({desc: 'Versamento', importo: verV});
+    // Pagamenti contanti
+    const pagV = COL.pagCont ? parseNum(row[COL.pagCont]) : 0;
+    if (pagV > 0) g.pagCont.push({desc: row[COL.nota]||'Pagamento', importo: pagV});
+
+    risultati.push(g);
+  }
+
+  if (risultati.length === 0) {
+    notif('⚠️ Nessuna riga del 2026 trovata. Controlla il file.');
+    return;
+  }
+
+  _importBuffer = risultati;
+  mostraAnteprima(risultati, hdrs);
+}
+
+function mostraAnteprima(risultati, hdrs) {
+  document.getElementById('impPreviewArea').style.display = 'block';
+  document.getElementById('btnConfermaImport').style.display = 'inline-block';
+
+  document.getElementById('impCounter').innerHTML =
+    `<span class="imp-badge imp-ok">✅ ${risultati.length} giornate riconosciute</span>` +
+    `&nbsp;&nbsp;Colonne trovate: ${Object.entries({
+      Data: hdrs.find(h=>h.includes('DATA')),
+      Lordo: hdrs.find(h=>h.match(/INCASSO|ENTRATE|LORDO/)),
+      POS: hdrs.find(h=>h.match(/CARTASI|POS/)),
+      Note: hdrs.find(h=>h.match(/DESCRI|NOTE/)),
+    }).filter(([,v])=>v).map(([k])=>`<code>${k}</code>`).join(' ')}`;
+
+  const preview = document.getElementById('impPreview');
+  preview.innerHTML = risultati.slice(0, 20).map(g => {
+    const pos = g.pos.reduce((s,p)=>s+p.importo,0);
+    return `<div class="riga">
+      <strong>${g.iso}</strong>&nbsp;&nbsp;
+      ${g.note ? `<em>${g.note.slice(0,30)}</em>&nbsp;&nbsp;` : ''}
+      Lordo: <strong>€${g.incassoLordo.toFixed(2)}</strong>
+      ${pos>0 ? `&nbsp;POS: €${pos.toFixed(2)}`:''}
+      ${g.versamenti.length>0 ? `&nbsp;Vers: €${g.versamenti[0].importo.toFixed(2)}`:''}
+    </div>`;
+  }).join('') + (risultati.length > 20 ? `<div class="riga" style="color:#94a3b8;">… e altre ${risultati.length-20} giornate</div>` : '');
+}
+
+function confermaImport() {
+  const mode = document.querySelector('input[name="impMode"]:checked').value;
+  let imported = 0; let skipped = 0; let overwritten = 0;
+
+  if (mode === 'replace') {
+    D = {};
+  }
+
+  for (const g of _importBuffer) {
+    const iso = g.iso;
+    const {iso: _, ...dati} = g;
+    if (mode === 'merge' && D[iso] && n(D[iso].incassoLordo) > 0) {
+      skipped++;
+      continue;
+    }
+    D[iso] = dati;
+    if (mode === 'overwrite') overwritten++;
+    else imported++;
+  }
+
+  salvaDati();
+  chiudiModal();
+  _invalidaCache();
+  renderAll();
+
+  let msg = `✅ Importati: ${imported + (mode==='replace'?_importBuffer.length:overwritten)}`;
+  if (skipped > 0) msg += ` · Saltati (già presenti): ${skipped}`;
+  notif(msg);
+}
+
+async function caricaDati() {
+  // 1. File standalone con dati integrati
+  if (typeof _DATI_INTEGRATI !== 'undefined' && _DATI_INTEGRATI) {
+    D = _DATI_INTEGRATI;
+    return;
+  }
+  // 2. Server Flask (persistenza su disco — fonte principale)
+  if (window.location.protocol !== 'file:') {
+    try {
+      const resp = await fetch('/api/prima-nota/carica');
+      const data = await resp.json();
+      if (data.ok && Object.keys(data.dati).length > 0) {
+        D = data.dati;
+        try { localStorage.setItem('pnc2026', JSON.stringify(D)); } catch(e) {}
+        return;
+      }
+    } catch(e) { /* server non raggiungibile, continua con localStorage */ }
+  }
+  // 3. Fallback: localStorage (backup di sessione)
+  try {
+    const s = localStorage.getItem('pnc2026');
+    if (s) { D = JSON.parse(s); }
+  } catch(e) { D = {}; }
+}
+
+// ─── Cancella tutti i dati dell'anno (solo su conferma doppia) ──────────────
+function cancellaAnno() {
+  if (!confirm('Sei sicuro di voler cancellare TUTTI i dati del 2026?\n\nQuesta operazione è irreversibile.')) return;
+  if (!confirm('CONFERMA FINALE: eliminare definitivamente tutti i dati 2026?')) return;
+  D = {};
+  try { localStorage.removeItem('pnc2026'); } catch(e){}
+  salvaSuServer(); // sovrascrive il file server con D vuoto
+  _invalidaCache();
+  renderAll();
+  notif('✅ Tutti i dati del 2026 sono stati cancellati.');
+}
+
+// ─── Esporta HTML standalone (con dati integrati) ───────────────────────────
+// Il file scaricato può essere aperto su qualsiasi Mac senza Flask né Claude.
+async function esportaHtmlStandalone() {
+  try {
+    const resp = await fetch(window.location.href);
+    if (!resp.ok) throw new Error('Impossibile scaricare il template');
+    let html = await resp.text();
+    // Inietta i dati correnti come costante globale
+    const datiJson = JSON.stringify(D);
+    const inject = `\n<!-- dati integrati -->\n<script>const _DATI_INTEGRATI = ${datiJson};<\/script>`;
+    html = html.replace('</head>', inject + '\n</head>');
+    const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'prima_nota_2026.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    notif('✅ File HTML scaricato — aprilo su qualsiasi Mac!');
+  } catch(e) {
+    notif('⚠️ Errore: ' + e.message);
+  }
+}
+
+// Auto-salva su server e localStorage ogni 60 sec
+setInterval(() => { salvaDati(); }, 60000);
+// Salva su server (sendBeacon) alla chiusura del browser/tab
+window.addEventListener('beforeunload', () => { salvaDati(); });
+
+function notif(msg) {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  Object.assign(el.style, {
+    position:'fixed', bottom:'18px', right:'18px',
+    background:'#1e293b', color:'white',
+    padding:'9px 16px', borderRadius:'6px',
+    fontSize:'12px', zIndex:9999,
+    boxShadow:'0 4px 12px rgba(0,0,0,.3)',
+    fontFamily:'Georgia,serif', opacity:'0',
+    transition:'opacity .2s'
+  });
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.style.opacity = '1');
+  setTimeout(() => { el.style.opacity='0'; setTimeout(()=>el.remove(),200); }, 2000);
+}
+
+// ─── Calcoli ─────────────────────────────────────
+function n(v) { return parseFloat(v)||0; }
+
+function calcG(iso, riporto) {
+  riporto = riporto || 0;
+  const d = D[iso]||{};
+  const lordo = n(d.incassoLordo);
+
+  // Sezione "Incasso del giorno": ricevute e fatture sono totali diretti (campi singoli).
+  const totRic  = n(d.ricevuteImporto);
+  const totFatt = n(d.fattImporto);
+  const diffInc = (totRic > 0 || totFatt > 0) ? (lordo - totRic - totFatt) : 0;
+
+  // Storni digitali (tolgono dal lordo → contante giorno)
+  const totPos  = (d.pos||[]).reduce((s,r)=>s+n(r.importo),0);
+  const totBon  = (d.bonifici||[]).reduce((s,r)=>s+n(r.importo),0);
+  // Sospesi: solo globali (legacy migrati a _migraLegacySospesi al momento del render)
+  const totSosGlobal = (D['__sospesi__']||[])
+    .filter(s => s.dataApertura === iso)
+    .reduce((s,r)=>s+n(r.importo),0);
+  const totSos = totSosGlobal > 0 ? totSosGlobal
+    : (d.sospesi||[]).reduce((s,r)=>s+n(r.importo),0);
+  const totExt  = (d.extra||[]).reduce((s,r)=>s+n(r.importo),0);
+  const totStorni = totPos + totBon + totSos + totExt;
+
+  // Rientri sospesi su questo giorno
+  const rientri = d.rientriSospesi || [];
+  const totRientroPos      = rientri.filter(r=>r.metodo==='pos').reduce((s,r)=>s+n(r.importo),0);
+  const totRientroContanti = rientri.filter(r=>r.metodo==='contanti').reduce((s,r)=>s+n(r.importo),0);
+  // Bonifico: solo registrazione, nessun effetto sul contante
+
+  // Anticipi e caparre (−) e chiusura anticipi (+)
+  const totAnticip     = (d.anticip||[]).reduce((s,r)=>s+n(r.importo),0);
+  const totChiusAnticip = (d.chiusAnticip||[]).reduce((s,r)=>s+n(r.importo),0);
+
+  // POS rientro riduce la deduzione POS (quei soldi non erano di oggi)
+  // Contanti rientro aumenta il contante fisico (soldi arrivati in cassa)
+  const contGiorno = lordo - totPos + totRientroPos - totBon - totSos - totExt
+                     + totRientroContanti - totAnticip + totChiusAnticip;
+
+  // Pagamenti contanti e versamenti (tolgono dal contante)
+  const totPagCont = (d.pagCont||[]).reduce((s,r)=>s+n(r.importo),0);
+  const totVers    = (d.versamenti||[]).reduce((s,r)=>s+n(r.importo),0);
+  const contFisici = riporto + contGiorno - totPagCont - totVers;
+
+  return { lordo, totRic, diffInc,
+           totPos, totBon, totSos, totExt, totStorni,
+           totRientroPos, totRientroContanti,
+           totAnticip, totChiusAnticip,
+           contGiorno, totPagCont, totVers, riporto, contFisici };
+}
+
+// Lista ordinata di tutti i giorni del 2026 (costante — si costruisce una sola volta)
+const _tuttiI = [];
+(function(){ for (let m=0;m<12;m++) (CALENDARIO_2026[m]||[]).forEach(g=>_tuttiI.push(g.iso)); })();
+
+// Cache dei riporti calcolati — invalida ogni volta che D cambia
+let _ripCache = null;
+function _invalidaCache() { _ripCache = null; }
+
+// Riporto continuo: catena ricorsiva che non salta mai i giorni con soli
+// versamenti o pagamenti (giorni di chiusura con versamento in banca).
+// Un giorno "ha dati" se ha incasso > 0 OPPURE versamenti > 0 OPPURE pagCont > 0.
+function riportoPrecedente(iso) {
+  if (!_ripCache) _ripCache = Object.create(null);
+  if (iso in _ripCache) return _ripCache[iso];
+
+  const idx = _tuttiI.indexOf(iso);
+  if (idx <= 0) {
+    // Primo giorno dell'anno: usa il riporto da anno precedente (impostato manualmente)
+    const v = getRiportoAnno();
+    _ripCache[iso] = v;
+    return v;
+  }
+
+  for (let i = idx - 1; i >= 0; i--) {
+    const prevIso = _tuttiI[i];
+    const prevD = D[prevIso];
+    if (!prevD) continue;
+    const hasDati = n(prevD.incassoLordo) > 0 ||
+                    (prevD.versamenti||[]).some(v => n(v.importo) > 0) ||
+                    (prevD.pagCont||[]).some(p => n(p.importo) > 0);
+    if (hasDati) {
+      const prevRip = riportoPrecedente(prevIso);
+      _ripCache[iso] = calcG(prevIso, prevRip).contFisici;
+      return _ripCache[iso];
+    }
+  }
+
+  _ripCache[iso] = 0;
+  return 0;
+}
+
+function totMese(m) {
+  return (CALENDARIO_2026[m]||[]).reduce((acc,g) => {
+    const c = calcG(g.iso);
+    const hasData = c.lordo > 0;
+    return {
+      lordo:   acc.lordo   + c.lordo,
+      storni:  acc.storni  + c.totStorni,
+      pagCont: acc.pagCont + c.totPagCont,
+      vers:    acc.vers    + c.totVers,
+      fisici:  acc.fisici  + c.contFisici,
+      nGiorni: acc.nGiorni + (hasData ? 1 : 0),
+      hasDiff: acc.hasDiff || (hasData && Math.abs(c.diffInc) > 0.005)
+    };
+  }, {lordo:0,storni:0,pagCont:0,vers:0,fisici:0,nGiorni:0,hasDiff:false});
+}
+
+// ─── Formattazione ────────────────────────────────
+// Formato italiano affidabile: 1.234,56 (non dipende dal locale del browser)
+function _itFmt(v, dec) {
+  const x = Math.abs(parseFloat(v) || 0);
+  const d = (dec === undefined) ? 2 : dec;
+  const parts = x.toFixed(d).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return d > 0 ? parts.join(',') : parts[0];
+}
+function fmt(v, z) {
+  const val = parseFloat(v)||0;
+  if (z && val===0) return '—';
+  return '€ ' + _itFmt(val);
+}
+function fmtS(v) {
+  const val = parseFloat(v)||0;
+  if (val===0) return '—';
+  const s = '€ ' + _itFmt(val);
+  return val<0 ? '('+s+')' : s;
+}
+function fmtK(v) {
+  const val = parseFloat(v)||0;
+  if (val===0) return '—';
+  return '€ ' + _itFmt(val, 0);
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ─── Input numerico formato italiano (1.234,56) ──
+function fmtNum(v) {
+  const x=parseFloat(v)||0;
+  return x === 0 ? '' : _itFmt(x);
+}
+function parseFmt(s) {
+  return parseFloat(String(s||'').replace(/\./g,'').replace(',','.'))||0;
+}
+// onfocus: mostra numero grezzo; onblur: ri-formatta
+function numFocus(el){ const v=parseFmt(el.value); el.value=v>0?String(v):''; el.select(); }
+function numBlur(el) { const v=parseFmt(el.value); el.value=v>0?fmtNum(v):''; }
+
+// Salvataggio differito 3s (senza rebuild card)
+let _saveTimer=null;
+function scheduleSave(){
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{_saveTimer=null;salvaDati();},3000);
+}
+
+// Aggiorna solo i totali calcolati nella card aperta (NON ricostruisce il DOM)
+function refreshCalcCard(iso){
+  if(isoAt!==iso) return;
+  const rip=riportoPrecedente(iso), c=calcG(iso,rip), d=D[iso]||{};
+  const $=id=>document.getElementById(id);
+  const eImp=$('pn-importo-calc'); if(eImp) eImp.textContent=fmt(c.lordo,true);
+  const eCv=$('pn-cassa-val'); if(eCv) eCv.textContent=fmt(c.contGiorno);
+  const eCs=$('pn-cassa-sub');
+  if(eCs) eCs.textContent='Lordo '+fmt(c.lordo,true)+(c.totPos>0?' − POS '+fmt(c.totPos):'')+(c.totBon>0?' − Bon. '+fmt(c.totBon):'')+(c.totSos>0?' − Sos. '+fmt(c.totSos):'')+(c.totExt>0?' − Altro '+fmt(c.totExt):'')+(c.totAnticip>0?' − Anticipi '+fmt(c.totAnticip):'')+(c.totChiusAnticip>0?' + Chiusura '+fmt(c.totChiusAnticip):'');
+  const subFin=(rip!==0?'Riporto '+fmt(rip)+' + ':'')+
+    'Cont. giorno '+fmt(c.contGiorno,true)+(c.totPagCont>0?' − Pag. '+fmt(c.totPagCont):'')+(c.totVers>0?' − Vers. '+fmt(c.totVers):'');
+  const wrap=$('pn-fin-wrap');
+  if(wrap){
+    wrap.className=c.contFisici>=0?'alert-ok-fin':'alert-neg-fin';
+    const lab=$('pn-fin-lab');
+    if(lab){lab.textContent=c.contFisici>=0?'Contanti in cassa':'⚠️ Cassa negativa!';lab.style.color=c.contFisici>=0?'var(--verde)':'var(--rosso)';}
+    const sub=$('pn-fin-sub'); if(sub) sub.textContent=subFin;
+    const val=$('pn-fin-val'); if(val){val.textContent=c.contFisici>=0?fmt(c.contFisici):fmtS(c.contFisici);val.style.color=c.contFisici>=0?'var(--verde)':'var(--rosso)';}
+  }
+}
+
+// ══════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════
+function setVista(v) {
+  vista = v;
+  document.getElementById('btnM').classList.toggle('active', v==='m');
+  document.getElementById('btnR').classList.toggle('active', v==='r');
+  document.getElementById('viewM').style.display = v==='m' ? 'flex' : 'none';
+  document.getElementById('viewR').style.display = v==='r' ? 'block' : 'none';
+  if (v==='r') renderRiepilogo();
+}
+
+function renderAll() {
+  renderMesi(); renderKpi(); renderSidebar(); renderDettaglio(); renderSospesoPanel();
+}
+
+// ─── Mesi ────────────────────────────────────────
+function renderMesi() {
+  document.getElementById('mesiBar').innerHTML = MESI.map((m,i) => {
+    const t = totMese(i);
+    const dot = t.nGiorni>0 && i!==meseAt ? '<span class="dot"></span>' : '';
+    return `<button class="mese-tab${i===meseAt?' active':''}" onclick="switchMese(${i})">${m}${dot}</button>`;
+  }).join('');
+}
+function switchMese(i) { meseAt=i; isoAt=null; renderAll(); }
+
+// ─── KPI ─────────────────────────────────────────
+function renderKpi() {
+  const t = totMese(meseAt);
+  document.getElementById('k0').textContent = MESI[meseAt];
+  document.getElementById('k1').textContent = t.lordo>0 ? fmt(t.lordo) : '—';
+  document.getElementById('k2').textContent = t.storni>0 ? fmt(t.storni) : '—';
+  document.getElementById('k3').textContent = t.pagCont>0 ? fmt(t.pagCont) : '—';
+  const k4 = document.getElementById('k4');
+  k4.textContent = fmtS(t.fisici) + (t.hasDiff?' ⚠':'');
+  k4.className = 'kpi-val ' + (t.hasDiff ? 'kv-warn' : t.fisici>=0 ? 'kv-verde' : 'kv-rosso');
+}
+
+// ─── Sidebar ─────────────────────────────────────
+function renderSidebar() {
+  const gg = CALENDARIO_2026[meseAt]||[];
+  let h = `<div class="sb-month">${MESI[meseAt]} 2026</div>`;
+  gg.forEach(g => {
+    const rip = riportoPrecedente(g.iso);
+    const c = calcG(g.iso, rip);
+    const hasData = c.lordo > 0 || c.totVers > 0 || c.totPagCont > 0;
+    const hasDiff = c.lordo > 0 && Math.abs(c.diffInc) > 0.005;
+    const act = g.iso===isoAt;
+    let dot = `<div class="dot-e"></div>`;
+    if (hasData && hasDiff) dot = `<div class="dot-w"></div>`;
+    else if (hasData) dot = `<div class="dot-g"></div>`;
+    let amtHtml = '';
+    if (c.lordo > 0) {
+      const cls = hasDiff ? 'warn' : 'pos';
+      amtHtml = `<div class="gi-amt ${cls}">${fmtK(c.lordo)}${hasDiff?' ⚠':''}</div>`;
+    } else if (c.totVers > 0) {
+      amtHtml = `<div class="gi-amt neg" title="Versamento banca">−${fmtK(c.totVers)}</div>`;
+    }
+    h += `<div class="gi${act?' active':''}" onclick="selGiorno('${g.iso}')">
+      <div class="gi-wd${g.w?' wk':''}">${g.wd}</div>
+      <div class="gi-num">${g.d}</div>
+      <div class="gi-body">
+        ${D[g.iso]&&D[g.iso].note ? `<div class="gi-note">${esc(D[g.iso].note)}</div>` : ''}
+        ${amtHtml}
+      </div>
+      ${dot}
+    </div>`;
+  });
+  const t = totMese(meseAt);
+  if (t.lordo > 0) {
+    h += `<div class="sb-total">
+      <span class="sb-tot-label">Totale ${MESI[meseAt]}</span>
+      <span class="sb-tot-val">${fmt(t.lordo)}</span>
+    </div>`;
+  }
+  document.getElementById('sidebar').innerHTML = h;
+}
+
+function selGiorno(iso) { isoAt = iso; renderSidebar(); renderDettaglio(); }
+
+// ══════════════════════════════════════════════════
+// RENDER DETTAGLIO — la card verticale
+// ══════════════════════════════════════════════════
+function renderDettaglio() {
+  const panel = document.getElementById('detail');
+  if (!isoAt) {
+    panel.innerHTML = `<div class="empty-state"><div class="ico">📋</div><h2>Seleziona un giorno dalla lista</h2></div>`;
+    return;
+  }
+  const iso = isoAt;
+  const g = (CALENDARIO_2026[meseAt]||[]).find(x=>x.iso===iso);
+  if (!g) return;
+  ensureD(iso);
+  const d = D[iso];
+  if (_migraLegacySospesi(iso)) { _invalidaCache(); scheduleSave(); }
+  const riporto = riportoPrecedente(iso);
+  const c = calcG(iso, riporto);
+
+  const dataLunga = new Date(iso+'T12:00:00').toLocaleDateString('it-IT',
+    {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // helper per blocco a colonna con più righe
+  // colorInput: false/null = no colore | true = rosso | stringa CSS = colore custom
+  function righeHtml(cat, labelRow, colorInput) {
+    const colorCss = typeof colorInput === 'string' ? colorInput
+                   : (colorInput ? 'var(--rosso)' : '');
+    const lista = d[cat]||[];
+    const rows = lista.map((r,i) => `
+      <div class="pag-row">
+        <input type="text" value="${esc(r.desc)}" placeholder="${labelRow}"
+          onchange="updVoce('${iso}','${cat}',${i},'desc',this.value)">
+        <input type="text" inputmode="decimal" class="mono"
+          style="font-family:var(--mono);text-align:right;font-size:13px;padding:6px 8px;border:1px solid var(--bordo);border-radius:5px;background:#f8fafc;width:100%;${colorCss?'color:'+colorCss+';':''}"
+          value="${fmtNum(r.importo)}" placeholder="0,00"
+          onfocus="numFocus(this)" onblur="numBlur(this)"
+          oninput="updVoce('${iso}','${cat}',${i},'importo',parseFmt(this.value))">
+        <button class="btn-del" onclick="delVoce('${iso}','${cat}',${i})">×</button>
+      </div>`).join('');
+    const tot = lista.reduce((s,r)=>s+n(r.importo),0);
+    return { rows, tot };
+  }
+
+  // ─ Incasso ─
+  const totPos = (d.pos||[]).reduce((s,r)=>s+n(r.importo),0);
+
+  // ─ Storni digitali ─
+  const { rows: rBon, tot: totBon }   = righeHtml('bonifici','es. Bonifico cliente ABC...', true);
+  const { rows: rExt, tot: totExt }   = righeHtml('extra','Descrizione libera...', true);
+
+  // ─ Anticipi e caparre (negativo) / Chiusura anticipi (positivo) ─
+  const { rows: rAnticip,      tot: totAnticip }      = righeHtml('anticip',      'es. Acconto Rossi – doc. non fiscale…', '#c2410c');
+  const { rows: rChiusAnticip, tot: totChiusAnticip } = righeHtml('chiusAnticip', 'es. Saldo Rossi – doc. fiscale…',       '#059669');
+
+  // ─ Uscite ─
+  const { rows: rPag, tot: totPag }   = righeHtml('pagCont','es. Fornitore, bolletta...', true);
+  const { rows: rVer, tot: totVer }   = righeHtml('versamenti','es. Versamento banca...', true);
+
+  function blk(cat, titolo, rows, tot, icon) {
+    return `
+      <div class="pag-block">
+        <div class="pag-block-title">
+          ${icon} ${titolo}
+          <span>${tot>0?fmt(tot,false):''}</span>
+        </div>
+        ${rows || `<p class="no-voci">Nessuna voce</p>`}
+        <button class="btn-add" onclick="addVoce('${iso}','${cat}')">+ aggiungi riga</button>
+      </div>`;
+  }
+
+  // Alert contanti finali (con riporto) — ultima sezione invariata
+  const subFin = (riporto !== 0 ? `Riporto ${fmt(riporto)} + ` : '') +
+    `Cont. giorno ${fmt(c.contGiorno,true)}` +
+    (c.totPagCont > 0 ? ` − Pag. ${fmt(c.totPagCont)}` : '') +
+    (c.totVers > 0 ? ` − Vers. ${fmt(c.totVers)}` : '');
+  const alertFin = c.contFisici >= 0
+    ? `<div id="pn-fin-wrap" class="alert-ok-fin">
+        <div class="al-left">
+          <div id="pn-fin-lab" class="al-label" style="color:var(--verde)">Contanti in cassa</div>
+          <div id="pn-fin-sub" class="al-sub">${subFin}</div>
+        </div>
+        <div id="pn-fin-val" class="al-val" style="color:var(--verde)">${fmt(c.contFisici)}</div>
+      </div>`
+    : `<div id="pn-fin-wrap" class="alert-neg-fin">
+        <div class="al-left">
+          <div id="pn-fin-lab" class="al-label" style="color:var(--rosso)">⚠️ Cassa negativa!</div>
+          <div id="pn-fin-sub" class="al-sub">${subFin}</div>
+        </div>
+        <div id="pn-fin-val" class="al-val" style="color:var(--rosso)">${fmtS(c.contFisici)}</div>
+      </div>`;
+
+  panel.innerHTML = `
+  <div class="day-card">
+
+    <div class="day-hdr">
+      <div>
+        <div class="dg">${g.wd} ${g.d} ${MESI[meseAt].slice(0,3).toUpperCase()} 2026</div>
+        <div class="ds">${dataLunga.charAt(0).toUpperCase()+dataLunga.slice(1)}</div>
+      </div>
+      ${d.ricevuta ? `<div class="ric-badge">Ric. n° ${esc(d.ricevuta)}</div>` : '<div></div>'}
+    </div>
+
+    <!-- RIPORTO DAL GIORNO PRECEDENTE -->
+    ${iso === '2026-01-01' ? `
+    <div style="background:#f0f9ff;border-bottom:1px solid #bae6fd;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">↩️</span>
+        <div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:bold;color:#0369a1;">Riporto da anno precedente (2025)</div>
+          <div style="font-size:10px;color:#64748b;">Contanti in cassa al 31 dicembre 2025</div>
+        </div>
+      </div>
+      <input type="text" inputmode="decimal"
+        value="${fmtNum(getRiportoAnno())}" placeholder="0,00"
+        style="font-family:var(--mono);font-size:17px;font-weight:bold;color:#0369a1;text-align:right;border:2px solid #bae6fd;border-radius:6px;background:white;padding:4px 10px;width:130px;transition:border-color .15s;"
+        onfocus="numFocus(this)" onblur="numBlur(this)"
+        onchange="impostaRiportoAnno(parseFmt(this.value))">
+    </div>` : riporto !== 0 ? `
+    <div style="background:#f0f9ff;border-bottom:1px solid #bae6fd;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">↩️</span>
+        <div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:bold;color:#0369a1;">Riporto dal giorno precedente</div>
+          <div style="font-size:10px;color:#64748b;">Contanti in cassa all'apertura</div>
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:17px;font-weight:bold;color:#0369a1;">${fmt(riporto)}</div>
+    </div>` : ''}
+
+    <!-- DATI GIORNATA -->
+    <div class="sez">
+      <div class="sez-title">Dati giornata</div>
+      <div class="g2">
+        <div class="fl"><label>Note / descrizione</label>
+          <input type="text" value="${esc(d.note||'')}" placeholder="es. domenica, pos domenica sospeso…"
+            onchange="updCampo('${iso}','note',this.value)">
+        </div>
+        <div class="fl"><label>N° Ricevuta / progressivo</label>
+          <input type="text" value="${esc(d.ricevuta||'')}" placeholder="es. 055"
+            onchange="updCampo('${iso}','ricevuta',this.value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SEZIONE 1: INCASSO DEL GIORNO ══ -->
+    <div class="sez" style="background:#f0fdf4;">
+      <div class="sez-title">Incasso del giorno</div>
+
+      <div id="pn-importo-calc" class="incasso-big-field" style="display:flex;align-items:center;justify-content:flex-end;background:#f0f9ff;cursor:default;min-height:52px;">${fmt(n(d.incassoLordo),true)}</div>
+
+      <!-- Ricevute + Fatture: campi importo prominenti affiancati -->
+      <div class="g2" style="margin-bottom:9px;">
+        <div>
+          <span class="importo-sub-label">🧾 Totale ricevute</span>
+          <input type="text" inputmode="decimal" class="importo-sub-field"
+            value="${fmtNum(d.ricevuteImporto)}" placeholder="0,00"
+            onfocus="numFocus(this)" onblur="numBlur(this)"
+            oninput="updSubImporto('${iso}','ricevuteImporto',parseFmt(this.value))">
+        </div>
+        <div>
+          <span class="importo-sub-label">📄 Totale fatture</span>
+          <input type="text" inputmode="decimal" class="importo-sub-field"
+            value="${fmtNum(d.fattImporto)}" placeholder="0,00"
+            onfocus="numFocus(this)" onblur="numBlur(this)"
+            oninput="updSubImporto('${iso}','fattImporto',parseFmt(this.value))">
+        </div>
+      </div>
+
+      <!-- Fatture: dal/al n° e note — riga compatta -->
+      <div class="g3">
+        <div class="fl"><label>Fatture dal n°</label>
+          <input type="text" value="${esc(d.fattDal||'')}" placeholder="es. 101"
+            onchange="updCampo('${iso}','fattDal',this.value)">
+        </div>
+        <div class="fl"><label>al n°</label>
+          <input type="text" value="${esc(d.fattAl||'')}" placeholder="es. 108"
+            onchange="updCampo('${iso}','fattAl',this.value)">
+        </div>
+        <div class="fl"><label>Note fatture</label>
+          <input type="text" value="${esc(d.fattNote||'')}" placeholder="es. cliente Rossi…"
+            onchange="updCampo('${iso}','fattNote',this.value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SEZIONE 2: MOVIMENTI DI CASSA ══ -->
+    <div class="sez" style="background:#fefce8;">
+      <div class="sez-title">Movimenti di cassa</div>
+
+      <!-- POS -->
+      <div class="pag-block">
+        <div class="pag-block-title">POS <span>${totPos>0?fmt(totPos,false):''}</span></div>
+        <input type="text" inputmode="decimal" class="pos-single-input"
+          value="${fmtNum(totPos)}" placeholder="0,00"
+          onfocus="numFocus(this)" onblur="numBlur(this)"
+          oninput="updPos('${iso}',parseFmt(this.value))">
+      </div>
+
+      ${blk('bonifici','Bonifico', rBon, totBon, '')}
+
+      <!-- Sospesi (unica fonte: D['__sospesi__'] filtrata per giorno) -->
+      <div class="pag-block">
+        ${(()=>{
+          const gsGiorno = (D['__sospesi__']||[]).filter(s=>s.dataApertura===iso);
+          const totGlob  = gsGiorno.reduce((s,x)=>s+n(x.importo),0);
+          const lista = gsGiorno.map(s=>`
+            <div class="pag-row">
+              <input type="text" value="${esc(s.desc)}" placeholder="Descrizione sospeso"
+                onchange="salvaDescSospeso('${s.id}', this.value)">
+              <input type="text" inputmode="decimal"
+                style="font-family:var(--mono);text-align:right;font-size:13px;padding:6px 8px;border:1px solid var(--bordo);border-radius:5px;background:#f8fafc;width:100%;color:var(--rosso);"
+                value="${fmtNum(s.importo)}" placeholder="0,00"
+                onfocus="numFocus(this)" onblur="numBlur(this)"
+                onchange="updImportoSospeso('${s.id}', parseFmt(this.value))">
+              <button class="btn-del" onclick="delSospeso('${s.id}')">×</button>
+            </div>`).join('');
+          return `
+            <div class="pag-block-title">Sospesi <span>${totGlob>0?fmt(totGlob,false):''}</span></div>
+            ${lista||'<p class="no-voci">Nessun sospeso</p>'}
+            <div class="sp-add-inline">
+              <input type="text" class="sp-ai-desc" id="spIDesc-${iso}" placeholder="Descrizione sospeso…">
+              <input type="text" class="sp-ai-amt" id="spIAmt-${iso}" placeholder="0,00" inputmode="decimal"
+                onfocus="numFocus(this)" onblur="numBlur(this)"
+                onkeydown="if(event.key==='Enter'){aggiungiSospesoInline('${iso}')}">
+              <button class="sp-ai-btn" onclick="aggiungiSospesoInline('${iso}')">+ Aggiungi</button>
+            </div>`;
+        })()}
+      </div>
+
+      ${blk('extra','Altro', rExt, totExt, '')}
+
+      ${(()=>{
+        const rientri = d.rientriSospesi||[];
+        if (rientri.length===0) return '';
+        const rPos  = rientri.filter(r=>r.metodo==='pos');
+        const rCont = rientri.filter(r=>r.metodo==='contanti');
+        const rBon  = rientri.filter(r=>r.metodo==='bonifico');
+        const totRP = rPos.reduce((s,r)=>s+n(r.importo),0);
+        const totRC = rCont.reduce((s,r)=>s+n(r.importo),0);
+        const totRB = rBon.reduce((s,r)=>s+n(r.importo),0);
+        const riga = (r,sfondo,badgeCol,badgeTxt,amtCol,segno) =>
+          `<div class="rientro-row" style="background:${sfondo}">
+            <span class="rr-desc">${esc(r.desc)}</span>
+            <span class="rr-badge" style="background:${badgeCol}22;color:${badgeCol}">${badgeTxt}</span>
+            <span class="rr-amt" style="color:${amtCol}">${segno}${fmt(r.importo)}</span>
+          </div>`;
+        return `<div class="pag-block" style="border-left:3px solid #0369a1;padding-left:6px;margin-bottom:8px;">
+          <div class="pag-block-title" style="border-left:none;padding-left:0;color:#0369a1;">
+            Rientri sospesi
+            <span style="color:#0369a1;">${fmt(totRP+totRC+totRB,false)}</span>
+          </div>
+          ${rPos.map(r=>riga(r,'#fffbeb','#b45309','POS →','#b45309','+')).join('')}
+          ${rCont.map(r=>riga(r,'#f0fdf4','#15803d','CONT. +','#15803d','+')).join('')}
+          ${rBon.map(r=>riga(r,'#f0f9ff','#0369a1','BON.','#0369a1','')).join('')}
+        </div>`;
+      })()}
+
+      <!-- Box etichettato "Chiusura anticipi" — valori invariati: categoria anticip, segno −, colore arancio -->
+      <div class="pag-block">
+        <div class="pag-block-title" style="border-left-color:#f97316;color:#9a3412;">
+          Chiusura anticipi
+          <span style="color:#c2410c;">${totAnticip>0?'− '+fmt(totAnticip,false):''}</span>
+        </div>
+        ${rAnticip || `<p class="no-voci">Nessuna voce</p>`}
+        <button class="btn-add" style="border-color:#fdba74;background:#fff7ed;color:#c2410c;" onclick="addVoce('${iso}','anticip')">+ aggiungi chiusura anticipo</button>
+      </div>
+
+      <!-- Box etichettato "Anticipi e caparre" — valori invariati: categoria chiusAnticip, segno +, colore verde -->
+      <div class="pag-block">
+        <div class="pag-block-title" style="border-left-color:#16a34a;color:#14532d;">
+          Anticipi e caparre
+          <span style="color:#059669;">${totChiusAnticip>0?'+ '+fmt(totChiusAnticip,false):''}</span>
+        </div>
+        ${rChiusAnticip || `<p class="no-voci">Nessuna voce</p>`}
+        <button class="btn-add" style="border-color:#86efac;background:#f0fdf4;color:#15803d;" onclick="addVoce('${iso}','chiusAnticip')">+ aggiungi anticipo / caparra</button>
+      </div>
+
+      <!-- Totale cassa del giorno — chiude la sezione -->
+      <div class="totale-cassa-bar">
+        <div>
+          <div class="totale-cassa-label">Contanti del giorno</div>
+          <div id="pn-cassa-sub" style="font-size:9px;color:#64748b;margin-top:2px;">
+            Lordo ${fmt(c.lordo,true)}${c.totPos>0?' − POS '+fmt(c.totPos):''}${c.totBon>0?' − Bon. '+fmt(c.totBon):''}${c.totSos>0?' − Sos. '+fmt(c.totSos):''}${c.totExt>0?' − Altro '+fmt(c.totExt):''}${c.totAnticip>0?' − Anticipi '+fmt(c.totAnticip):''}${c.totChiusAnticip>0?' + Chiusura '+fmt(c.totChiusAnticip):''}
+          </div>
+        </div>
+        <div id="pn-cassa-val" class="totale-cassa-val">${fmt(c.contGiorno)}</div>
+      </div>
+    </div>
+
+    <!-- ══ SEZIONE 3: USCITE DI CASSA ══ -->
+    <div class="sez">
+      <div class="sez-title">Uscite di cassa</div>
+
+      <div class="pag-block">
+        <div class="pag-block-title">Versamento banca <span>${totVer>0?fmt(totVer,false):''}</span></div>
+        ${rVer || `<p class="no-voci">Nessun versamento</p>`}
+        <button class="btn-add" onclick="addVoce('${iso}','versamenti')">+ aggiungi versamento</button>
+      </div>
+
+      <div class="pag-block" style="margin-top:12px;">
+        <div class="pag-block-title">Uscite contanti <span>${totPag>0?fmt(totPag,false):''}</span></div>
+        ${rPag || `<p class="no-voci">Nessuna uscita</p>`}
+        <button class="btn-add" onclick="addVoce('${iso}','pagCont')">+ aggiungi uscita</button>
+      </div>
+    </div>
+
+    <!-- ULTIMA SEZIONE: contanti fisici (invariata) -->
+    ${alertFin}
+
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// AGGIORNA DATI
+// ══════════════════════════════════════════════════
+function ensureD(iso) {
+  if (!D[iso]) D[iso]={
+    note:'', ricevuta:'',
+    fattDal:'', fattAl:'', fattNote:'', fattImporto:'',
+    ricevuteImporto:'',
+    incassoLordo:'',
+    ricevute:[],pos:[],bonifici:[],sospesi:[],extra:[],
+    anticip:[],chiusAnticip:[],
+    pagCont:[],versamenti:[],
+    rientriSospesi:[]
+  };
+  if (D[iso].ricevuteImporto === undefined) D[iso].ricevuteImporto = '';
+  ['ricevute','pos','bonifici','sospesi','extra','anticip','chiusAnticip','pagCont','versamenti','rientriSospesi'].forEach(k=>{
+    if (!Array.isArray(D[iso][k])) D[iso][k]=[];
+  });
+}
+
+function updPos(iso, val) {
+  ensureD(iso);
+  const v = parseFloat(val) || 0;
+  D[iso].pos = v > 0 ? [{desc: 'POS', importo: v}] : [];
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  refreshCalcCard(iso);
+  scheduleSave();
+}
+
+function updCampo(iso, campo, val) {
+  ensureD(iso);
+  D[iso][campo] = val;
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  refreshCalcCard(iso);
+  scheduleSave();
+}
+
+function updSubImporto(iso, campo, val) {
+  ensureD(iso);
+  D[iso][campo] = val;
+  D[iso].incassoLordo = (parseFloat(D[iso].ricevuteImporto)||0) + (parseFloat(D[iso].fattImporto)||0);
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  refreshCalcCard(iso);
+  scheduleSave();
+}
+
+function updSospesi(iso, val) {
+  ensureD(iso);
+  const v = parseFloat(val) || 0;
+  D[iso].sospesi = v > 0 ? [{desc: 'Sospesi', importo: v}] : [];
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  refreshCalcCard(iso);
+  scheduleSave();
+}
+
+function addVoce(iso, cat) {
+  ensureD(iso);
+  D[iso][cat].push({id: Date.now(), desc: '', importo: ''});
+  _invalidaCache();
+  renderDettaglio(); // OK: click su bottone, nessun focus da mantenere
+}
+
+function updVoce(iso, cat, idx, campo, val) {
+  ensureD(iso);
+  D[iso][cat][idx][campo] = val;
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  refreshCalcCard(iso);
+  scheduleSave();
+}
+
+function delVoce(iso, cat, idx) {
+  ensureD(iso);
+  D[iso][cat].splice(idx, 1);
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  renderDettaglio(); // OK: click su ×, nessun focus da mantenere
+  salvaDati();
+}
+
+// ══════════════════════════════════════════════════
+// RIEPILOGO
+// ══════════════════════════════════════════════════
+function renderRiepilogo() {
+  let totG = {lordo:0,storni:0,pagCont:0,vers:0,fisici:0,nGiorni:0};
+  const body = MESI.map((m,i) => {
+    const t = totMese(i);
+    totG.lordo+=t.lordo; totG.storni+=t.storni; totG.pagCont+=t.pagCont;
+    totG.vers+=t.vers; totG.fisici+=t.fisici; totG.nGiorni+=t.nGiorni;
+    const v = t.nGiorni===0;
+    const cF = !v&&t.fisici<0?'color:var(--rosso)':(!v?'color:var(--verde)':'');
+    const warn = !v&&t.hasDiff?' ⚠':'';
+    return `<tr onclick="switchMeseRiep(${i})" style="${i===meseAt?'background:#eff6ff':''}">
+      <td>${m}</td>
+      <td style="color:var(--grigio)">${t.nGiorni||'—'}</td>
+      <td style="color:var(--accent)">${v?'—':fmt(t.lordo)}</td>
+      <td style="color:var(--rosso)">${!v&&t.storni>0?fmt(t.storni):'—'}</td>
+      <td>${!v&&t.pagCont>0?fmt(t.pagCont):'—'}</td>
+      <td>${!v&&t.vers>0?fmt(t.vers):'—'}</td>
+      <td style="${cF};font-weight:bold">${v?'—':fmtS(t.fisici)+warn}</td>
+    </tr>`;
+  }).join('');
+  const cFt = totG.fisici>=0?'color:var(--verde)':'color:var(--rosso)';
+  document.getElementById('riepBody').innerHTML = body;
+  document.getElementById('riepFoot').innerHTML = `<tr>
+    <td>TOTALE ANNO</td><td>${totG.nGiorni}</td>
+    <td style="color:var(--accent)">${fmt(totG.lordo,true)}</td>
+    <td style="color:var(--rosso)">${fmt(totG.storni,true)}</td>
+    <td>${fmt(totG.pagCont,true)}</td>
+    <td>${fmt(totG.vers,true)}</td>
+    <td style="${cFt}">${fmtS(totG.fisici)}</td>
+  </tr>`;
+}
+function switchMeseRiep(i) { meseAt=i; isoAt=null; setVista('m'); renderAll(); }
+
+// ══════════════════════════════════════════════════
+// EXPORT CSV per Excel italiano
+// ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// RIPORTO ANNO PRECEDENTE
+// ══════════════════════════════════════════════════
+
+function getRiportoAnno() {
+  const s = D['__settings__'] || {};
+  return n(s.riportoAnno) || 0;
+}
+
+function impostaRiportoAnno(val) {
+  if (!D['__settings__']) D['__settings__'] = {};
+  D['__settings__'].riportoAnno = parseFloat(val) || 0;
+  _invalidaCache();
+  salvaDati();
+  renderAll();
+  notif('✅ Riporto 2025 aggiornato: ' + fmt(D['__settings__'].riportoAnno));
+}
+
+function aggiornaRiportoAnnoUI() {
+  const inp = document.getElementById('riportoAnnoInput');
+  if (inp) {
+    const v = getRiportoAnno();
+    inp.value = v > 0 ? v.toFixed(2) : '';
+  }
+}
+
+// ══════════════════════════════════════════════════
+// ESPORTAZIONE MENSILE PER COMMERCIALISTA
+// ══════════════════════════════════════════════════
+
+let _commMeseSelezionato = -1;
+
+function apriModalCommercialista() {
+  const grid = document.getElementById('commMesiGrid');
+  grid.innerHTML = '';
+  MESI.forEach((nome, idx) => {
+    const giorni = (CALENDARIO_2026[idx]||[]).filter(g => {
+      const d = D[g.iso];
+      return d && (n(d.incassoLordo)>0 ||
+                   (d.versamenti||[]).some(v=>n(v.importo)>0) ||
+                   (d.pagCont||[]).some(p=>n(p.importo)>0));
+    });
+    const hasData = giorni.length > 0;
+    const btn = document.createElement('button');
+    btn.textContent = nome;
+    btn.disabled = !hasData;
+    btn.style.cssText = `padding:10px 6px;border-radius:6px;font-size:12px;cursor:${hasData?'pointer':'not-allowed'};
+      border:1px solid ${hasData?'#3b82f6':'#374151'};
+      background:${hasData?'#1e3a5f':'#111827'};
+      color:${hasData?'#93c5fd':'#4b5563'};font-family:Georgia,serif;`;
+    if (hasData) {
+      btn.onclick = () => selezionaCommMese(idx, btn);
+    }
+    grid.appendChild(btn);
+  });
+  document.getElementById('commAnteprima').style.display = 'none';
+  document.getElementById('btnScaricoComm').style.display = 'none';
+  _commMeseSelezionato = -1;
+  document.getElementById('modalCommercialista').classList.add('open');
+}
+
+function selezionaCommMese(idx, el) {
+  _commMeseSelezionato = idx;
+  // Evidenzia selezione
+  document.querySelectorAll('#commMesiGrid button').forEach(b => {
+    b.style.background = b===el ? '#1d4ed8' : '#1e3a5f';
+    b.style.borderColor = b===el ? '#60a5fa' : '#3b82f6';
+  });
+  // Genera anteprima
+  const anteprima = generaCsvCommercialista(idx, true);
+  document.getElementById('commAnteprimaText').textContent = anteprima;
+  document.getElementById('commAnteprima').style.display = 'block';
+  document.getElementById('btnScaricoComm').style.display = 'inline-block';
+  document.getElementById('btnScaricoComm').textContent = `⬇ Scarica ${MESI[idx]} 2026.csv`;
+}
+
+function scaricaCsvCommercialista() {
+  if (_commMeseSelezionato < 0) return;
+  const csv = generaCsvCommercialista(_commMeseSelezionato, false);
+  const nome = MESI[_commMeseSelezionato].toLowerCase();
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `prima_nota_${nome}_2026.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  document.getElementById('modalCommercialista').classList.remove('open');
+  notif(`✅ ${MESI[_commMeseSelezionato]} 2026 — file scaricato per il commercialista`);
+}
+
+function generaCsvCommercialista(meseIdx, soloAnteprima) {
+  const nomeMese = MESI[meseIdx].toUpperCase();
+  const sep = ';';
+
+  const tuttiGiorni = CALENDARIO_2026[meseIdx] || [];
+  if (tuttiGiorni.length === 0) return '(Mese non disponibile)';
+
+  const haDati = tuttiGiorni.some(g => {
+    const d = D[g.iso];
+    return d && (n(d.incassoLordo)>0 ||
+                 (d.versamenti||[]).some(v=>n(v.importo)>0) ||
+                 (d.pagCont||[]).some(p=>n(p.importo)>0));
+  });
+  if (!haDati) return '(Nessun dato inserito per questo mese)';
+
+  const primoIso   = tuttiGiorni[0].iso;
+  const riportoMese = riportoPrecedente(primoIso);
+
+  const r   = (v) => typeof v==='number' ? v.toFixed(2).replace('.',',') : '';
+  const rv  = (v) => (typeof v==='number' && v !== 0) ? v.toFixed(2).replace('.',',') : '';
+  const q   = (v) => (v===''||v===null||v===undefined) ? '' : `"${String(v).replace(/"/g,'""')}"`;
+  const isoToIt = (iso) => { const p=(iso||'').split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:''; };
+
+  const righe = [];
+
+  // ── Intestazione ──────────────────────────────────────────────
+  righe.push(q(`PRIMA NOTA DI CASSA — RISTORANTE PARIZZI — ${nomeMese} 2026`));
+  righe.push('');
+  righe.push([q('Cassa riportata da mese precedente'), '', r(riportoMese)].join(sep));
+  righe.push('');
+
+  // ── Header colonne ────────────────────────────────────────────
+  // Colonne: DATA | GG | CHIUSURA DI CASSA | POS | SOSPESI | ALTRI |
+  //          TOT. NON CONTANTI | CONTANTI GIORNO | VERSAMENTO BANCA |
+  //          PAG. CONTANTI | CASSA FINE GIORNO |
+  //          RIENTRO — DESCRIZIONE | RIENTRO — DATA | RIENTRO — IMPORTO | NOTE
+  righe.push([
+    q('DATA'), q('GG'),
+    q('CHIUSURA DI CASSA'),
+    q('POS / CARTASÌ'), q('SOSPESI'), q('ALTRI'),
+    q('TOT. NON CONTANTI'),
+    q('CONTANTI GIORNO'),
+    q('VERSAMENTO BANCA'),
+    q('PAG. CONTANTI'),
+    q('CASSA FINE GIORNO'),
+    q('RIENTRO — DESCRIZIONE'), q('RIENTRO — DATA'), q('RIENTRO — IMPORTO'),
+    q('NOTE')
+  ].join(sep));
+
+  // ── Righe giornaliere ─────────────────────────────────────────
+  let tLordo=0, tPos=0, tSos=0, tAlt=0,
+      tStorni=0, tContG=0, tVers=0, tPagC=0;
+
+  const limite = soloAnteprima ? Math.min(7, tuttiGiorni.length) : tuttiGiorni.length;
+
+  for (let i = 0; i < limite; i++) {
+    const g = tuttiGiorni[i];
+    const d = D[g.iso];
+    const dataParts = g.iso.split('-');
+    const dataFmt = `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
+
+    // Rientri sospesi con data di pagamento = questo giorno
+    const rientriOggi = (D['__sospesi__']||[])
+      .filter(s => s.rientro && s.rientro.data === g.iso);
+    const rientroDesc    = rientriOggi.map(s => s.desc).join(' | ');
+    const rientroData    = rientriOggi.length > 0 ? isoToIt(rientriOggi[0].rientro.data) : '';
+    const rientroImporto = rientriOggi.reduce((sum,s) => sum + n(s.rientro.importo), 0);
+
+    const haMovimento = d && (n(d.incassoLordo)>0 ||
+                              (d.versamenti||[]).some(v=>n(v.importo)>0) ||
+                              (d.pagCont||[]).some(p=>n(p.importo)>0));
+
+    if (!haMovimento) {
+      const cassaInvariata = riportoPrecedente(g.iso);
+      righe.push([
+        q(dataFmt), q(g.wd),
+        '', '', '', '', '', '', '', '', r(cassaInvariata),
+        q(rientroDesc), q(rientroData), rv(rientroImporto)||'',
+        ''
+      ].join(sep));
+      continue;
+    }
+
+    const rip = riportoPrecedente(g.iso);
+    const c   = calcG(g.iso, rip);
+
+    const pos = (d.pos||[]).reduce((s,p)=>s+n(p.importo),0);
+    const sosLeg  = (d.sospesi||[]).reduce((s,p)=>s+n(p.importo),0);
+    const sosGlob = (D['__sospesi__']||[]).filter(s=>s.dataApertura===g.iso)
+                      .reduce((s,p)=>s+n(p.importo),0);
+    const sos  = sosLeg + sosGlob;
+    const alt  = (d.bonifici||[]).concat(d.extra||[]).reduce((s,p)=>s+n(p.importo),0);
+    const vers = c.totVers;
+    const pagc = c.totPagCont;
+
+    righe.push([
+      q(dataFmt), q(g.wd),
+      rv(c.lordo),
+      rv(pos), rv(sos), rv(alt),
+      rv(c.totStorni),
+      rv(c.contGiorno),
+      rv(vers),
+      rv(pagc),
+      r(c.contFisici),
+      q(rientroDesc), q(rientroData), rv(rientroImporto)||'',
+      q(d.note||'')
+    ].join(sep));
+
+    tLordo+=c.lordo; tPos+=pos; tSos+=sos; tAlt+=alt;
+    tStorni+=c.totStorni; tContG+=c.contGiorno;
+    tVers+=vers; tPagC+=pagc;
+  }
+
+  if (!soloAnteprima) {
+    const ultConDati = [...tuttiGiorni].reverse()
+      .find(g => { const d=D[g.iso]; return d && (n(d.incassoLordo)>0 || (d.versamenti||[]).some(v=>n(v.importo)>0)); });
+    const cassaFine = ultConDati
+      ? calcG(ultConDati.iso, riportoPrecedente(ultConDati.iso)).contFisici
+      : riportoMese;
+
+    righe.push('');
+    righe.push([
+      q('TOTALE MESE'), q(''),
+      rv(tLordo), rv(tPos), rv(tSos), rv(tAlt),
+      rv(tStorni), rv(tContG), rv(tVers), rv(tPagC),
+      r(cassaFine), q(''), q(''), q(''), q('')
+    ].join(sep));
+    righe.push('');
+    righe.push(q('Cifre in Euro (€) — separatore decimale: virgola — Prima Nota 2026 Ristorante Parizzi'));
+    return righe.join('\r\n');
+  }
+
+  return righe.join('\n');
+}
+
+// ══════════════════════════════════════════════════
+// EXPORT CSV COMPLETO (vecchio, per uso interno)
+// ══════════════════════════════════════════════════
+function esportaCsv() {
+  const nomeMese = MESI[meseAt];
+  const giorni = (CALENDARIO_2026[meseAt]||[]).filter(g => {
+    const d=D[g.iso]; return d && n(d.incassoLordo)>0;
+  });
+
+  if (giorni.length===0) { notif('⚠️ Nessun dato nel mese'); return; }
+
+  const righe = [];
+  righe.push([`PRIMA NOTA DI CASSA — ${nomeMese.toUpperCase()} 2026`]);
+  righe.push([]);
+  righe.push(['DATA','GG','NOTE','RIC.N°','RIPORTO PREC.',
+    'INCASSO LORDO',
+    'RICEVUTE DESC','RICEVUTE €',
+    'DIFF. QUADRATURA',
+    'POS DESC','POS €',
+    'BONIFICO DESC','BONIFICO €',
+    'SOSPESI DESC','SOSPESI €',
+    'ALTRO DESC','ALTRO €',
+    'TOT. STORNI DIGITALI',
+    'CONTANTI GIORNO',
+    'PAG. CONTANTI DESC','PAG. CONTANTI €',
+    'VERSAMENTO DESC','VERSAMENTO €',
+    'CONTANTI FISICI']);
+
+  let tL=0,tSt=0,tPag=0,tVer=0,tFis=0;
+
+  giorni.forEach(g => {
+    const d = D[g.iso];
+    const rip = riportoPrecedente(g.iso);
+    const c = calcG(g.iso, rip);
+    const maxLen = Math.max(1,
+      (d.ricevute||[]).length,
+      (d.pos||[]).length,(d.bonifici||[]).length,
+      (d.sospesi||[]).length,(d.extra||[]).length,
+      (d.pagCont||[]).length,(d.versamenti||[]).length);
+    for (let i=0;i<maxLen;i++) {
+      const ric=d.ricevute[i];
+      const pos=d.pos[i], bon=d.bonifici[i];
+      const sos=d.sospesi[i], ext=d.extra[i];
+      const pag=d.pagCont[i], ver=d.versamenti[i];
+      righe.push([
+        i===0?g.iso:'', i===0?g.wd:'', i===0?(d.note||''):'', i===0?(d.ricevuta||''):'',
+        i===0?riportoPrecedente(g.iso):'',
+        i===0?n(d.incassoLordo):'',
+        ric?ric.desc:'', ric?n(ric.importo):'',
+        i===0?c.diffInc:'',
+        pos?pos.desc:'', pos?n(pos.importo):'',
+        bon?bon.desc:'', bon?n(bon.importo):'',
+        sos?sos.desc:'', sos?n(sos.importo):'',
+        ext?ext.desc:'', ext?n(ext.importo):'',
+        i===0?c.totStorni:'',
+        i===0?c.contGiorno:'',
+        pag?pag.desc:'', pag?n(pag.importo):'',
+        ver?ver.desc:'', ver?n(ver.importo):'',
+        i===0?c.contFisici:''
+      ]);
+    }
+    tL+=c.lordo; tSt+=c.totStorni; tPag+=c.totPagCont; tVer+=c.totVers; tFis+=c.contFisici;
+  });
+
+  righe.push([]);
+  righe.push(['TOTALE','','','','',tL,'','','',
+              '','','','','','','','',tSt,tL-tSt,'',tPag,'',tVer,tFis]);
+
+  const sep = ';';
+  const csv = righe.map(r =>
+    r.map(v => {
+      if (v===''||v===null||v===undefined) return '';
+      if (typeof v==='number') return v.toFixed(2).replace('.',',');
+      return '"'+String(v).replace(/"/g,'""')+'"';
+    }).join(sep)
+  ).join('\r\n');
+
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`prima_nota_${nomeMese.toLowerCase()}_2026.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  notif('✅ File CSV pronto — aprilo con Excel');
+}
+
+// ══════════════════════════════════════════════════
+// SOSPESI GLOBALI
+// ══════════════════════════════════════════════════
+
+function fmtData(iso) {
+  if (!iso) return '';
+  const p = iso.split('-');
+  const mm = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  return `${parseInt(p[2])} ${mm[parseInt(p[1])-1]} ${p[0]}`;
+}
+
+function getSospesoGlobali() {
+  if (!Array.isArray(D['__sospesi__'])) D['__sospesi__'] = [];
+  return D['__sospesi__'];
+}
+
+function _migraLegacySospesi(iso) {
+  const d = D[iso];
+  if (!d || !d.sospesi || d.sospesi.length === 0) return false;
+  const globali  = getSospesoGlobali();
+  const eliminati = new Set(D['__sospesi_eliminati__']||[]);
+  let migrated = false;
+  d.sospesi.forEach((leg, i) => {
+    const legId = 'sp_leg_' + iso.replace(/-/g,'') + '_' + i;
+    if (eliminati.has(legId)) return;
+    const giaEsiste = globali.some(g =>
+      g.dataApertura === iso &&
+      Math.abs(n(g.importo) - n(leg.importo)) < 0.01 &&
+      g.desc === (leg.desc||''));
+    if (!giaEsiste) {
+      globali.push({ id: legId, dataApertura: iso, desc: leg.desc||'', importo: n(leg.importo), rientro: null });
+      migrated = true;
+    }
+  });
+  d.sospesi = [];
+  return migrated;
+}
+
+function aggiungiSospesoInline(iso) {
+  const descEl = document.getElementById('spIDesc-' + iso);
+  const amtEl  = document.getElementById('spIAmt-'  + iso);
+  if (!descEl || !amtEl) return;
+  const desc    = descEl.value.trim();
+  const importo = parseFmt(amtEl.value);
+  if (!desc)    { notif('⚠️ Inserisci una descrizione'); descEl.focus(); return; }
+  if (!importo) { notif('⚠️ Inserisci l\'importo');      amtEl.focus();  return; }
+
+  const lista = getSospesoGlobali();
+  lista.push({ id: 'sp_'+Date.now(), dataApertura: iso, desc, importo, rientro: null });
+  _invalidaCache();
+  salvaDati();
+  renderAll();
+  notif('✅ Sospeso aggiunto');
+}
+
+function apriFormRientro(sid) {
+  document.querySelectorAll('.sp-form').forEach(f => f.style.display = 'none');
+  const el = document.getElementById('spf-'+sid);
+  if (el) { el.style.display = 'block'; el.querySelector('input[type="date"]').focus(); }
+}
+
+function confermRientro(sid) {
+  const dataEl   = document.getElementById('spd-'+sid);
+  const impEl    = document.getElementById('spi-'+sid);
+  const metEl    = document.getElementById('spm-'+sid);
+  const data     = dataEl?.value;
+  const importo  = parseFmt(impEl?.value || '');
+  const metodo   = metEl?.value;
+
+  if (!data)    { notif('⚠️ Inserisci la data del pagamento'); return; }
+  if (!importo) { notif('⚠️ Inserisci l\'importo ricevuto');  return; }
+  if (!metodo)  { notif('⚠️ Seleziona il metodo di pagamento'); return; }
+
+  const lista   = getSospesoGlobali();
+  const sospeso = lista.find(s => s.id === sid);
+  if (!sospeso) return;
+
+  // Rimuovi eventuale rientro precedente dal giorno vecchio
+  if (sospeso.rientro) {
+    const vecchiaData = sospeso.rientro.data;
+    if (D[vecchiaData]?.rientriSospesi) {
+      D[vecchiaData].rientriSospesi = D[vecchiaData].rientriSospesi.filter(r => r.sospeso_id !== sid);
+    }
+  }
+
+  const match = Math.abs(importo - sospeso.importo) < 0.005;
+  sospeso.rientro = { data, importo, metodo, parziale: !match };
+
+  // Aggiungi rientro al giorno target
+  ensureD(data);
+  D[data].rientriSospesi = (D[data].rientriSospesi || []).filter(r => r.sospeso_id !== sid);
+  D[data].rientriSospesi.push({
+    sospeso_id:   sid,
+    desc:         sospeso.desc,
+    importo,
+    metodo,
+    dataApertura: sospeso.dataApertura
+  });
+
+  _invalidaCache();
+  salvaDati();
+  renderAll();
+
+  if (!match) {
+    notif('⚠️ Importo parziale: sospeso rimane aperto con segnalazione');
+  } else {
+    notif('✅ Sospeso chiuso — rientro registrato il ' + fmtData(data));
+  }
+}
+
+function salvaDescSospeso(sid, nuovaDesc) {
+  const lista = getSospesoGlobali();
+  const s = lista.find(x => x.id === sid);
+  if (!s) return;
+  s.desc = nuovaDesc.trim();
+  scheduleSave();
+}
+
+function updImportoSospeso(sid, val) {
+  const lista = getSospesoGlobali();
+  const s = lista.find(x => x.id === sid);
+  if (!s) return;
+  s.importo = val;
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  renderSospesoPanel();
+  if (isoAt) refreshCalcCard(isoAt);
+  scheduleSave();
+}
+
+function delSospeso(sid) {
+  if (!confirm('Eliminare questo sospeso?')) return;
+  const lista = getSospesoGlobali();
+  const idx = lista.findIndex(x => x.id === sid);
+  if (idx === -1) return;
+  lista.splice(idx, 1);
+  if (!D['__sospesi_eliminati__']) D['__sospesi_eliminati__'] = [];
+  D['__sospesi_eliminati__'].push(sid);
+  _invalidaCache();
+  renderKpi(); renderSidebar();
+  renderDettaglio();
+  renderSospesoPanel();
+  salvaDati();
+}
+
+function renderSospesoPanel() {
+  const lista  = getSospesoGlobali();
+  const aperti = lista
+    .filter(s => !s.rientro || s.rientro.parziale)
+    .sort((a,b) => a.dataApertura < b.dataApertura ? -1 : a.dataApertura > b.dataApertura ? 1 : 0);
+  const el     = document.getElementById('spList');
+  if (!el) return;
+
+  if (aperti.length === 0) {
+    el.innerHTML = '<div class="sp-vuoto">Nessun sospeso aperto</div>';
+    return;
+  }
+
+  el.innerHTML = aperti.map(s => {
+    const parz = s.rientro?.parziale;
+    return `
+    <div class="sp-item">
+      <div class="sp-item-top">
+        <span class="sp-item-data">${fmtData(s.dataApertura)}</span>
+        <span class="sp-item-amt">${fmt(s.importo)}</span>
+      </div>
+      <div class="sp-item-desc">${esc(s.desc)}</div>
+      ${parz ? `<div class="sp-warn-badge">⚠ Parziale: ricevuto ${fmt(s.rientro.importo)} — da completare</div>` : ''}
+      <button class="sp-btn-rientro" onclick="apriFormRientro('${s.id}')">
+        ${parz ? '↺ Aggiorna rientro' : '✓ Registra pagamento'}
+      </button>
+      <div class="sp-form" id="spf-${s.id}" style="display:none">
+        <label class="sp-form-label">Data pagamento</label>
+        <input type="date" id="spd-${s.id}" value="${s.rientro?.data||''}">
+        <label class="sp-form-label">Importo ricevuto</label>
+        <input type="text" id="spi-${s.id}"
+          value="${fmtNum(s.rientro?.importo ?? s.importo)}"
+          onfocus="numFocus(this)" onblur="numBlur(this)" inputmode="decimal">
+        <label class="sp-form-label">Metodo di pagamento</label>
+        <select id="spm-${s.id}">
+          <option value="bonifico"${s.rientro?.metodo==='bonifico'?' selected':''}>Bonifico</option>
+          <option value="pos"${s.rientro?.metodo==='pos'?' selected':''}>Carta / POS</option>
+          <option value="contanti"${s.rientro?.metodo==='contanti'?' selected':''}>Contante</option>
+        </select>
+        <div class="sp-btn-row">
+          <button class="sp-btn-ok" onclick="confermRientro('${s.id}')">Conferma</button>
+          <button class="sp-btn-cancel" onclick="document.getElementById('spf-${s.id}').style.display='none'">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+// Init: carica prima dal server (async), poi renderizza
+(async () => {
+  await caricaDati();
+  aggiornaRiportoAnnoUI();
+  renderAll();
+})();
+</script>
+</body>
+</html>
