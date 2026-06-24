@@ -63,10 +63,15 @@ for i in $(seq 1 30); do
 done
 open "http://localhost:5001"
 
+# 5) Crea l'icona sulla Scrivania e nelle Applicazioni
+echo "→ Creo l'icona sulla Scrivania e nelle Applicazioni..."
+bash "$HERE/crea-icona.sh" "$HERE"
+
 echo ""
 echo "════════════════════════════════════════"
 echo "  Installazione completata!"
-echo "  L'app si apre da sola su http://localhost:5001"
+echo "  Trovi l'icona 'Prima Nota' sulla Scrivania"
+echo "  e nelle Applicazioni. Doppio clic per aprirla."
 echo "  Per aggiornarla in futuro: doppio clic su 3-Aggiorna"
 echo "════════════════════════════════════════"
 echo ""
