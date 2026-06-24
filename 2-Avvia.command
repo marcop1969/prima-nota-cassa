@@ -8,7 +8,7 @@ HERE="$(pwd)"
 
 # Se il server risponde già, apri e basta
 if curl -s http://localhost:5001 >/dev/null 2>&1; then
-  open "http://localhost:5001"; exit 0
+  open -a Safari "http://localhost:5001"; exit 0
 fi
 
 PLIST="$HOME/Library/LaunchAgents/com.parizzi.prima-nota.plist"
@@ -28,4 +28,4 @@ for i in $(seq 1 30); do
   sleep 0.5
   curl -s http://localhost:5001 >/dev/null 2>&1 && break
 done
-open "http://localhost:5001"
+open -a Safari "http://localhost:5001"

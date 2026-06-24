@@ -1,9 +1,8 @@
 #!/bin/bash
 # ════════════════════════════════════════════════════════════
-#  Crea l'icona "Prima Nota.app" e la mette sulla SCRIVANIA
-#  e nelle APPLICAZIONI. Doppio clic = apre l'app nel browser.
-#  Uso:  bash crea-icona.sh [CARTELLA_CODICE]
-#  (default: ~/PrimaNota — la posizione delle "figlie")
+#  Crea UNA sola app "Prima Nota.app" in APPLICAZIONI e UN solo
+#  alias sulla SCRIVANIA che la apre. Doppio clic = apre l'app
+#  in SAFARI. Uso:  bash crea-icona.sh [CARTELLA_CODICE]
 # ════════════════════════════════════════════════════════════
 CODE_DIR="${1:-$HOME/PrimaNota}"
 APP_NAME="Prima Nota.app"
@@ -34,14 +33,14 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-# ── launcher (placeholder __CODE_DIR__ sostituito dopo) ──
+# ── launcher (apre SEMPRE in Safari) ──
 cat > "$APP/Contents/MacOS/launcher" <<'LAUNCH'
 #!/bin/bash
 export PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH
 CODE="__CODE_DIR__"
-# Server già attivo? apri e basta
+# Server già attivo? apri in Safari e basta
 if curl -s http://localhost:5001 >/dev/null 2>&1; then
-  open "http://localhost:5001"; exit 0
+  open -a Safari "http://localhost:5001"; exit 0
 fi
 # Avvia il server
 PLIST="$HOME/Library/LaunchAgents/com.parizzi.prima-nota.plist"
@@ -53,7 +52,7 @@ elif command -v python3 >/dev/null 2>&1; then
   nohup python3 "$CODE/app.py" >/tmp/prima_nota.log 2>&1 &
 fi
 for i in $(seq 1 30); do sleep 0.5; curl -s http://localhost:5001 >/dev/null 2>&1 && break; done
-open "http://localhost:5001"
+open -a Safari "http://localhost:5001"
 LAUNCH
 sed -i '' "s|__CODE_DIR__|$CODE_DIR|g" "$APP/Contents/MacOS/launcher"
 chmod +x "$APP/Contents/MacOS/launcher"
@@ -61,11 +60,7 @@ chmod +x "$APP/Contents/MacOS/launcher"
 # ── Icona ──
 [ -f "$ICON_SRC" ] && cp "$ICON_SRC" "$APP/Contents/Resources/icona.icns"
 
-# ── Installa: Scrivania + Applicazioni ──
-# (rm -rf prima di ogni copia: senza, cp -R annida il nuovo bundle dentro il vecchio)
-DEST_DESK="$HOME/Desktop/$APP_NAME"
-rm -rf "$DEST_DESK"; cp -R "$APP" "$DEST_DESK"
-
+# ── UNA sola app: in Applicazioni (o ~/Applications se non scrivibile) ──
 rm -rf "/Applications/$APP_NAME" 2>/dev/null
 if cp -R "$APP" "/Applications/$APP_NAME" 2>/dev/null; then
   APPL="/Applications/$APP_NAME"
@@ -75,9 +70,28 @@ else
   APPL="$HOME/Applications/$APP_NAME"
 fi
 
-# ── Rinfresca l'icona nel Finder ──
+# ── UN solo alias sulla Scrivania (rimuove vecchie copie/alias) ──
+rm -rf "$HOME/Desktop/$APP_NAME" 2>/dev/null
+rm -f  "$HOME/Desktop/Prima Nota" 2>/dev/null
+osascript >/dev/null 2>&1 <<OSA
+tell application "Finder"
+  try
+    if exists file "Prima Nota" of desktop then delete file "Prima Nota" of desktop
+  end try
+  set a to make alias file to (POSIX file "$APPL") at (path to desktop folder)
+  try
+    set name of a to "Prima Nota"
+  end try
+end tell
+OSA
+# Se l'alias non è stato creato, metto una copia diretta come ripiego
+if [ ! -e "$HOME/Desktop/Prima Nota" ] && [ ! -e "$HOME/Desktop/$APP_NAME" ]; then
+  cp -R "$APP" "$HOME/Desktop/$APP_NAME"
+fi
+
+# ── Rinfresca le icone nel Finder ──
 LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-[ -x "$LSR" ] && "$LSR" -f "$DEST_DESK" "$APPL" 2>/dev/null
-touch "$DEST_DESK" "$APPL" 2>/dev/null
+[ -x "$LSR" ] && "$LSR" -f "$APPL" 2>/dev/null
+touch "$APPL" 2>/dev/null
 rm -rf "$TMP"
-echo "✓ Icona pronta su Scrivania e in: $APPL"
+echo "✓ UNA app in: $APPL  +  alias sulla Scrivania"

@@ -64,7 +64,7 @@ for i in $(seq 1 30); do
   sleep 0.5
   curl -s http://localhost:5001 >/dev/null 2>&1 && break
 done
-open "http://localhost:5001"
+open -a Safari "http://localhost:5001"
 
 # 5) Crea l'icona sulla Scrivania e nelle Applicazioni
 echo "→ Creo l'icona sulla Scrivania e nelle Applicazioni..."
