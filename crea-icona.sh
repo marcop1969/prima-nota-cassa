@@ -62,9 +62,11 @@ chmod +x "$APP/Contents/MacOS/launcher"
 [ -f "$ICON_SRC" ] && cp "$ICON_SRC" "$APP/Contents/Resources/icona.icns"
 
 # ── Installa: Scrivania + Applicazioni ──
+# (rm -rf prima di ogni copia: senza, cp -R annida il nuovo bundle dentro il vecchio)
 DEST_DESK="$HOME/Desktop/$APP_NAME"
 rm -rf "$DEST_DESK"; cp -R "$APP" "$DEST_DESK"
 
+rm -rf "/Applications/$APP_NAME" 2>/dev/null
 if cp -R "$APP" "/Applications/$APP_NAME" 2>/dev/null; then
   APPL="/Applications/$APP_NAME"
 else
