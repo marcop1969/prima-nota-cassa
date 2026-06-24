@@ -25,8 +25,11 @@ fi
 echo "→ Preparo l'ambiente Python (la prima volta richiede 1-2 minuti)..."
 python3 -m venv venv 2>/dev/null
 ./venv/bin/python -m pip install --quiet --upgrade pip
-./venv/bin/python -m pip install --quiet -r requirements.txt || {
-  echo "ERRORE durante l'installazione delle dipendenze."; read -r -p "Premi Invio per chiudere..."; exit 1; }
+# Flask è essenziale: se fallisce, fermati
+./venv/bin/python -m pip install --quiet flask || {
+  echo "ERRORE: impossibile installare Flask (serve la connessione a internet)."; read -r -p "Premi Invio per chiudere..."; exit 1; }
+# numbers-parser serve solo per importare i file .numbers: se fallisce, l'app funziona lo stesso
+./venv/bin/python -m pip install --quiet numbers-parser || echo "  (Nota: la funzione 'Importa .numbers' non sarà disponibile, ma l'app funziona comunque)"
 
 # 3) Avvio automatico all'accensione del Mac (LaunchAgent)
 echo "→ Configuro l'avvio automatico..."
