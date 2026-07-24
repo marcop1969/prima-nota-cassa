@@ -95,31 +95,33 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
 
 /* ─── SIDEBAR ─── */
 .sidebar {
-  width: 210px; min-width: 210px; background: white;
+  width: 450px; min-width: 450px; background: white;
   border-right: 1px solid var(--bordo); overflow-y: auto; padding: 6px 0;
 }
 .sb-month { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--grigio); padding: 5px 12px 3px; }
-.sb-total { margin: 6px 8px 2px; padding: 8px 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; display: flex; justify-content: space-between; align-items: baseline; }
-.sb-tot-label { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #0369a1; font-weight: bold; }
-.sb-tot-val { font-family: var(--mono); font-size: 14px; font-weight: bold; color: #0369a1; }
-.gi {
-  display: flex; align-items: center; padding: 6px 10px;
-  cursor: pointer; border-left: 3px solid transparent; gap: 7px; transition: background .1s;
-}
+.sb-head { display: grid; grid-template-columns: 58px 1fr 1fr 1fr; gap: 4px; padding: 2px 12px 4px; font-size: 8px; text-transform: uppercase; letter-spacing: .03em; color: var(--grigio); border-bottom: 1px solid var(--bordo); }
+.sb-head span { text-align: right; }
+.sb-head span:first-child { text-align: left; }
+.sb-total { display: grid; grid-template-columns: 58px 1fr 1fr 1fr; gap: 4px; margin: 6px 8px 2px; padding: 8px 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; align-items: baseline; }
+.sb-tot-label { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: #0369a1; font-weight: bold; text-align: left; }
+.sb-tot-val { font-family: var(--mono); font-size: 12px; font-weight: bold; color: #0369a1; text-align: right; }
+.sb-tot-sub { font-family: var(--mono); font-size: 11px; font-weight: bold; color: #0369a1; text-align: right; }
+.gi { display: block; padding: 4px 12px; cursor: pointer; border-left: 3px solid transparent; transition: background .1s; }
 .gi:hover { background: #f8fafc; }
 .gi.active { background: #eff6ff; border-left-color: var(--accent); }
-.gi-wd { font-size: 10px; color: var(--grigio); width: 24px; text-align: center; font-family: var(--mono); }
+.gi.vuoto { opacity: .4; }
+.gi-note { font-size: 9px; color: var(--grigio); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
+.gi-cols { display: grid; grid-template-columns: 58px 1fr 1fr 1fr; gap: 4px; align-items: baseline; }
+.gi-day { font-size: 11px; font-family: var(--mono); white-space: nowrap; }
+.gi-wd { color: var(--grigio); }
 .gi-wd.wk { color: #dc2626; }
-.gi-num { font-size: 13px; font-family: var(--mono); width: 20px; }
-.gi-body { flex: 1; overflow: hidden; }
-.gi-note { font-size: 10px; color: var(--grigio); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gi-amt { font-size: 10px; font-family: var(--mono); font-weight: bold; }
+.gi-nt { color: var(--accent); }
+.gi-amt, .gi-sub { font-family: var(--mono); text-align: right; white-space: nowrap; overflow: hidden; }
+.gi-amt { font-size: 11px; font-weight: bold; color: var(--testo); }
 .gi-amt.pos { color: var(--verde); }
 .gi-amt.neg { color: var(--rosso); }
 .gi-amt.warn { color: #b45309; }
-.dot-g { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
-.dot-e { width: 6px; height: 6px; border-radius: 50%; background: #e2e8f0; flex-shrink: 0; }
-.dot-w { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+.gi-sub { font-size: 10px; color: var(--grigio); }
 
 /* ─── PANNELLO DETTAGLIO ─── */
 .detail { flex: 1; overflow-y: auto; padding: 18px 22px; background: var(--bg); }
@@ -128,7 +130,15 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
 .empty-state h2 { font-size: 15px; font-weight: normal; margin-bottom: 5px; color: var(--testo); }
 
 /* ─── DAY CARD ─── */
-.day-card { background: var(--card); border: 1px solid var(--bordo); border-radius: 8px; overflow: hidden; max-width: 620px; }
+.day-card { background: var(--card); border: 1px solid var(--bordo); border-radius: 8px; overflow: hidden; max-width: 1400px; }
+/* Scheda giorno divisa in due colonne: sinistra = incasso, destra = movimenti */
+.detail-2col { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }
+.detail-col-l { border-right: 1px solid var(--bordo); min-width: 0; }
+.detail-col-r { min-width: 0; }
+@media (max-width: 1180px) {
+  .detail-2col { grid-template-columns: 1fr; }
+  .detail-col-l { border-right: none; }
+}
 .day-hdr {
   background: var(--blu); color: white; padding: 12px 18px;
   display: flex; align-items: center; justify-content: space-between;
@@ -184,6 +194,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
 }
 .pag-block-title span { font-family:var(--mono); font-size:11px; color:var(--rosso); font-weight:bold; }
 .pag-row { display:grid; grid-template-columns:1fr 120px 28px; gap:6px; margin-bottom:4px; align-items:center; }
+.pag-row.with-met { grid-template-columns:1fr 96px 108px 28px; }
+.pag-metodo { font-family:var(--font); font-size:12px; padding:6px 6px; border:1px solid var(--bordo); border-radius:5px; background:#f8fafc; color:var(--testo); cursor:pointer; }
 .btn-del {
   width:28px; height:32px; border:1px solid var(--rosso-bd);
   background:var(--rosso-bg); color:var(--rosso);
@@ -297,6 +309,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
 .sp-item-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
 .sp-item-data { font-size:9px; color:var(--grigio); }
 .sp-item-amt { font-family:var(--mono); font-size:12px; font-weight:bold; color:var(--rosso); }
+.sp-item-right { display:flex; align-items:center; gap:6px; }
+.sp-item-del { border:none; background:transparent; color:#cbd5e1; cursor:pointer; font-size:14px; line-height:1; padding:0 3px; border-radius:3px; }
+.sp-item-del:hover { color:#dc2626; background:#fef2f2; }
 .sp-item-desc { font-size:11px; color:var(--testo); margin-bottom:4px; }
 .sp-item-desc-input { width:100%; font-family:var(--font); font-size:11px; color:var(--testo); border:none; border-bottom:1px dashed transparent; background:transparent; padding:0; margin-bottom:4px; outline:none; }
 .sp-item-desc-input:hover { border-bottom-color:#cbd5e1; }
@@ -335,6 +350,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
 .rientro-row .rr-desc { flex:1; color:var(--grigio); }
 .rientro-row .rr-badge { font-size:8px; text-transform:uppercase; letter-spacing:.07em; font-weight:bold; margin-right:8px; padding:2px 5px; border-radius:3px; }
 .rientro-row .rr-amt { font-family:var(--mono); font-size:11px; font-weight:bold; }
+.rientro-row .rr-del { margin-left:8px; border:none; background:transparent; color:#cbd5e1; cursor:pointer; font-size:13px; line-height:1; padding:0 2px; border-radius:3px; }
+.rientro-row .rr-del:hover { color:#dc2626; background:#fef2f2; }
 
 /* ─── MODALE IMPORTAZIONE ─── */
 .modal-overlay {
@@ -394,12 +411,14 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
     <div class="vista-sel">
       <button class="vista-btn active" id="btnM" onclick="setVista('m')">Mensile</button>
       <button class="vista-btn" id="btnR" onclick="setVista('r')">Riepilogo</button>
+      <button class="vista-btn" id="btnC" onclick="setVista('c')">💡 Consigli</button>
     </div>
     <button class="btn" onclick="importaJson()" title="Carica dati salvati (JSON)">📂 Carica</button>
     <button class="btn" style="background:#7c3aed;border-color:#7c3aed;" onclick="importaExcel()" title="Importa da Numbers o Excel">📊 Importa</button>
     <button class="btn btn-green" onclick="apriModalCommercialista()" title="Esporta il mese per il commercialista (CSV/Excel)">📤 Commercialista</button>
     <button class="btn" style="background:#166534;border-color:#166534;" onclick="salvaJson()">💾 Salva JSON</button>
     <button class="btn" style="background:#0e7490;border-color:#0e7490;" onclick="esportaHtmlStandalone()" title="Scarica l'app con i dati integrati — apribile su qualsiasi Mac">💻 Salva HTML</button>
+    <button class="btn" style="background:#4338ca;border-color:#4338ca;" onclick="apriControllo()" title="Salva un backup di sicurezza e controlla la quadratura della cassa">🔍 Controllo</button>
     <button class="btn" style="background:#991b1b;border-color:#991b1b;" onclick="cancellaAnno()" title="Cancella tutti i dati del 2026">🗑 Cancella anno</button>
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="leggiJson(this)">
     <input type="file" id="xlsInput" accept=".csv,.xlsx,.xls,.numbers" style="display:none" onchange="leggiExcel(this)">
@@ -463,6 +482,17 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
   </div>
 </div>
 
+<div id="viewC" class="riep-wrap" style="display:none;">
+  <div style="max-width:820px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <h2 style="margin:0;font-size:15px;color:var(--testo);">💡 Consigli per migliorare l'app</h2>
+      <button class="btn" style="font-size:11px;color:#374151;" onclick="renderConsigli()">↻ Aggiorna</button>
+    </div>
+    <p style="font-size:11px;color:var(--grigio);margin:0 0 14px;">Proposte del consigliere. Rispondi <b>Sì</b> (lo realizziamo), <b>No</b>, oppure <b>Sì ma con modifiche</b>.</p>
+    <div id="consigliList"></div>
+  </div>
+</div>
+
 <!-- MODALE SELEZIONE MESE PER COMMERCIALISTA -->
 <div class="modal-overlay" id="modalCommercialista">
   <div class="modal-box" style="max-width:480px;">
@@ -483,6 +513,31 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
       <button class="btn btn-green" id="btnScaricoComm" style="display:none;" onclick="scaricaCsvCommercialista()">⬇ Scarica CSV</button>
     </div>
   </div>
+</div>
+
+<!-- MODALE CONTROLLO — backup + quadratura -->
+<div class="modal-overlay" id="modalControllo">
+  <div class="modal-box" style="max-width:540px;">
+    <div class="modal-header">
+      <h2 style="margin:0;font-size:15px;">🔍 Controllo Prima Nota</h2>
+      <button onclick="document.getElementById('modalControllo').classList.remove('open')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;">✕</button>
+    </div>
+    <div class="modal-body" id="controlloBody"></div>
+    <div class="modal-footer" style="gap:8px;">
+      <button class="btn" style="color:#374151;" onclick="document.getElementById('modalControllo').classList.remove('open')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- AVVISO A SCHERMO INTERO: aggiornamento automatico dalla postazione principale -->
+<div id="overlayAgg" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(15,23,42,.94);color:white;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="font-size:38px;">⏳</div>
+  <div style="font-size:21px;font-weight:bold;letter-spacing:.03em;">Applicazione in aggiornamento</div>
+  <div id="overlayAggMsg" style="font-size:13px;color:#94a3b8;">Scarico la nuova versione…</div>
+  <div style="width:240px;height:5px;background:#334155;border-radius:3px;overflow:hidden;">
+    <div id="overlayAggBar" style="width:30%;height:100%;background:#38bdf8;border-radius:3px;transition:width .5s;"></div>
+  </div>
+  <div style="font-size:11px;color:#64748b;margin-top:4px;">I tuoi dati non vengono toccati. Si riapre da sola.</div>
 </div>
 
 <!-- MODALE IMPORTAZIONE EXCEL/CSV/NUMBERS -->
@@ -1084,6 +1139,74 @@ function cancellaAnno() {
   notif('✅ Tutti i dati del 2026 sono stati cancellati.');
 }
 
+// ─── Controllo: backup di sicurezza + quadratura cassa ──────────────────────
+async function apriControllo() {
+  const body = document.getElementById('controlloBody');
+  document.getElementById('modalControllo').classList.add('open');
+  body.innerHTML = '<p style="font-size:12px;color:#94a3b8;margin:0;">Salvo il backup e controllo i conti…</p>';
+
+  // 1. Salva lo stato corrente (aspettato) e poi fai la copia di sicurezza sul server
+  let backup = { ok:false };
+  try {
+    await fetch('/api/prima-nota/salva', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ dati: D })
+    });
+    const r = await fetch('/api/prima-nota/backup', { method:'POST' });
+    backup = await r.json();
+  } catch(e) {
+    backup = { ok:false, errore:'server non raggiungibile' };
+  }
+
+  // 2. Controlli in-app + 3. report
+  mostraReportControllo(backup, eseguiControlli());
+}
+
+function eseguiControlli() {
+  const out = [];
+  _tuttiI.forEach(iso => {
+    const d = D[iso];
+    if (!d) return;
+    const c = calcG(iso, 0);
+    // a) Quadratura: i digitali (dopo gli anticipi) superano l'incasso del giorno
+    if (c.lordo > 0 && (c.posEff + c.bonEff) > c.lordo + 0.01) {
+      out.push({ iso, grav:1,
+        msg:`Carte+bonifici ${fmt(c.posEff + c.bonEff)} superano l'incasso ${fmt(c.lordo)} di ${fmt(c.posEff + c.bonEff - c.lordo)} — manca un anticipo ricevuto?` });
+    }
+    // b) Chiusura anticipo senza la ricevuta fiscale del giorno (incasso mancante)
+    const chiusi = (d.anticip||[]).reduce((s,r)=>s+n(r.importo),0);
+    if (chiusi > 0.005 && c.lordo <= 0.005) {
+      out.push({ iso, grav:1, msg:`Chiusura anticipo di ${fmt(chiusi)} ma manca l'incasso (ricevuta fiscale) del giorno` });
+    }
+  });
+  // Sospesi con importo anomalo
+  (D['__sospesi__']||[]).forEach(s => {
+    if (n(s.importo) <= 0) out.push({ iso:s.dataApertura, grav:2, msg:`Sospeso "${esc(s.desc)}" con importo ${fmt(s.importo)} anomalo` });
+  });
+  out.sort((a,b) => a.grav - b.grav || (a.iso < b.iso ? -1 : 1));
+  return out;
+}
+
+function mostraReportControllo(backup, problemi) {
+  const body = document.getElementById('controlloBody');
+  const backupRiga = backup && backup.ok
+    ? `<div style="font-size:12px;color:#34d399;margin:0 0 12px;">💾 Backup salvato: <span style="font-family:monospace;color:#94a3b8;">${esc(backup.file)}</span></div>`
+    : `<div style="font-size:12px;color:#f59e0b;margin:0 0 12px;">⚠️ Backup non riuscito (${esc((backup&&backup.errore)||'errore')}) — i dati restano comunque salvati sul disco.</div>`;
+  let corpo;
+  if (problemi.length === 0) {
+    corpo = `<div style="background:#052e1a;border:1px solid #14532d;border-radius:6px;padding:14px;color:#34d399;font-size:13px;">✓ Tutto a posto: la cassa quadra, nessuna riga vuota, nessun sospeso anomalo.</div>`;
+  } else {
+    const righe = problemi.map(p => `
+      <div style="display:flex;gap:8px;padding:8px 10px;border-bottom:1px solid #1e293b;">
+        <span style="flex-shrink:0;font-family:var(--mono);font-size:11px;color:#94a3b8;">${fmtData(p.iso)}</span>
+        <span style="font-size:12px;color:#e2e8f0;">${p.msg}</span>
+      </div>`).join('');
+    corpo = `<div style="font-size:12px;color:#f59e0b;margin:0 0 8px;">Trovato/i ${problemi.length} punto/i da guardare (dal più importante):</div>
+      <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;max-height:300px;overflow-y:auto;">${righe}</div>`;
+  }
+  body.innerHTML = backupRiga + corpo;
+}
+
 // ─── Esporta HTML standalone (con dati integrati) ───────────────────────────
 // Il file scaricato può essere aperto su qualsiasi Mac senza Flask né Claude.
 async function esportaHtmlStandalone() {
@@ -1154,7 +1277,6 @@ function calcG(iso, riporto) {
   const totSos = totSosGlobal > 0 ? totSosGlobal
     : (d.sospesi||[]).reduce((s,r)=>s+n(r.importo),0);
   const totExt  = (d.extra||[]).reduce((s,r)=>s+n(r.importo),0);
-  const totStorni = totPos + totBon + totSos + totExt;
 
   // Rientri sospesi su questo giorno
   const rientri = d.rientriSospesi || [];
@@ -1162,14 +1284,31 @@ function calcG(iso, riporto) {
   const totRientroContanti = rientri.filter(r=>r.metodo==='contanti').reduce((s,r)=>s+n(r.importo),0);
   // Bonifico: solo registrazione, nessun effetto sul contante
 
-  // Anticipi e caparre (−) e chiusura anticipi (+)
-  const totAnticip     = (d.anticip||[]).reduce((s,r)=>s+n(r.importo),0);
-  const totChiusAnticip = (d.chiusAnticip||[]).reduce((s,r)=>s+n(r.importo),0);
+  // ─ Anticipi = specchio dei sospesi (pagato prima, fiscalizzato dopo) ─
+  //   chiusAnticip = anticipo RICEVUTO (creo): il pagamento è già nel POS/bonifico
+  //     del giorno ma non è ancora incasso fiscale → lo TOLGO dai digitali di oggi
+  //     (contanti invariati: i soldi erano in carta/bonifico, non in cassa).
+  //   anticip = anticipo CHIUSO (fiscalizzo): la ricevuta è stata pagata giorni prima
+  //     → lo AGGIUNGO ai digitali di oggi → tolto dai contanti del giorno.
+  //   Il metodo (carta/bonifico/contanti) decide su quale canale agisce.
+  const _sumMet = (cat, met) => (d[cat]||[])
+    .filter(r => (r.metodo||'carta') === met).reduce((s,r)=>s+n(r.importo),0);
+  const creaCarta = _sumMet('chiusAnticip','carta'),    chiuCarta = _sumMet('anticip','carta');
+  const creaBon   = _sumMet('chiusAnticip','bonifico'), chiuBon   = _sumMet('anticip','bonifico');
+  const creaCont  = _sumMet('chiusAnticip','contanti'), chiuCont  = _sumMet('anticip','contanti');
+  const totAnticip      = (d.anticip||[]).reduce((s,r)=>s+n(r.importo),0);       // chiusi
+  const totChiusAnticip = (d.chiusAnticip||[]).reduce((s,r)=>s+n(r.importo),0);  // ricevuti
+
+  // POS / bonifico "effettivi": creo anticipo toglie, chiudo anticipo aggiunge.
+  const posEff = totPos - creaCarta + chiuCarta;
+  const bonEff = totBon - creaBon  + chiuBon;
+  const contAnticip = creaCont - chiuCont;   // anticipi in contanti → diretti sulla cassa
+  const totStorni = posEff + bonEff + totSos + totExt;
 
   // POS rientro riduce la deduzione POS (quei soldi non erano di oggi)
   // Contanti rientro aumenta il contante fisico (soldi arrivati in cassa)
-  const contGiorno = lordo - totPos + totRientroPos - totBon - totSos - totExt
-                     + totRientroContanti - totAnticip + totChiusAnticip;
+  const contGiorno = lordo - posEff + totRientroPos - bonEff - totSos - totExt
+                     + totRientroContanti + contAnticip;
 
   // Pagamenti contanti e versamenti (tolgono dal contante)
   const totPagCont = (d.pagCont||[]).reduce((s,r)=>s+n(r.importo),0);
@@ -1178,6 +1317,7 @@ function calcG(iso, riporto) {
 
   return { lordo, totRic, diffInc,
            totPos, totBon, totSos, totExt, totStorni,
+           posEff, bonEff, contAnticip,
            totRientroPos, totRientroContanti,
            totAnticip, totChiusAnticip,
            contGiorno, totPagCont, totVers, riporto, contFisici };
@@ -1210,10 +1350,16 @@ function riportoPrecedente(iso) {
     const prevIso = _tuttiI[i];
     const prevD = D[prevIso];
     if (!prevD) continue;
-    const hasDati = n(prevD.incassoLordo) > 0 ||
-                    (prevD.versamenti||[]).some(v => n(v.importo) > 0) ||
-                    (prevD.pagCont||[]).some(p => n(p.importo) > 0);
-    if (hasDati) {
+    // Un giorno entra nella catena del riporto se muove la cassa fisica:
+    // incasso, versamenti, pagamenti OPPURE qualsiasi movimento netto del
+    // giorno (es. una chiusura anticipo registrata su un giorno senza
+    // incasso lordo — prima veniva saltata e la riduzione andava persa).
+    const cc = calcG(prevIso, 0);          // contGiorno non dipende dal riporto
+    const muoveCassa = n(prevD.incassoLordo) > 0 ||
+                       cc.totVers > 0 ||
+                       cc.totPagCont > 0 ||
+                       Math.abs(cc.contGiorno) > 0.005;
+    if (muoveCassa) {
       const prevRip = riportoPrecedente(prevIso);
       _ripCache[iso] = calcG(prevIso, prevRip).contFisici;
       return _ripCache[iso];
@@ -1294,7 +1440,7 @@ function refreshCalcCard(iso){
   const eImp=$('pn-importo-calc'); if(eImp) eImp.textContent=fmt(c.lordo,true);
   const eCv=$('pn-cassa-val'); if(eCv) eCv.textContent=fmt(c.contGiorno);
   const eCs=$('pn-cassa-sub');
-  if(eCs) eCs.textContent='Lordo '+fmt(c.lordo,true)+(c.totPos>0?' − POS '+fmt(c.totPos):'')+(c.totBon>0?' − Bon. '+fmt(c.totBon):'')+(c.totSos>0?' − Sos. '+fmt(c.totSos):'')+(c.totExt>0?' − Altro '+fmt(c.totExt):'')+(c.totAnticip>0?' − Anticipi '+fmt(c.totAnticip):'')+(c.totChiusAnticip>0?' + Chiusura '+fmt(c.totChiusAnticip):'');
+  if(eCs) eCs.textContent='Lordo '+fmt(c.lordo,true)+(c.totPos>0?' − Carte '+fmt(c.totPos):'')+(c.totBon>0?' − Bon. '+fmt(c.totBon):'')+(c.totSos>0?' − Sos. '+fmt(c.totSos):'')+(c.totExt>0?' − Altro '+fmt(c.totExt):'')+(c.totAnticip>0?' − Anticipi '+fmt(c.totAnticip):'')+(c.totChiusAnticip>0?' + Chiusura '+fmt(c.totChiusAnticip):'');
   const subFin=(rip!==0?'Riporto '+fmt(rip)+' + ':'')+
     'Cont. giorno '+fmt(c.contGiorno,true)+(c.totPagCont>0?' − Pag. '+fmt(c.totPagCont):'')+(c.totVers>0?' − Vers. '+fmt(c.totVers):'');
   const wrap=$('pn-fin-wrap');
@@ -1314,9 +1460,73 @@ function setVista(v) {
   vista = v;
   document.getElementById('btnM').classList.toggle('active', v==='m');
   document.getElementById('btnR').classList.toggle('active', v==='r');
+  document.getElementById('btnC').classList.toggle('active', v==='c');
   document.getElementById('viewM').style.display = v==='m' ? 'flex' : 'none';
   document.getElementById('viewR').style.display = v==='r' ? 'block' : 'none';
+  document.getElementById('viewC').style.display = v==='c' ? 'block' : 'none';
   if (v==='r') renderRiepilogo();
+  if (v==='c') renderConsigli();
+}
+
+// ─── Vista Consigli ──────────────────────────────────────────────
+async function renderConsigli() {
+  const el = document.getElementById('consigliList');
+  if (!el) return;
+  el.innerHTML = '<p style="font-size:12px;color:var(--grigio);">Carico…</p>';
+  let lista = [];
+  try {
+    const r = await fetch('/api/prima-nota/consigli');
+    lista = (await r.json()).consigli || [];
+  } catch(e) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--rosso);">Impossibile leggere i consigli.</p>'; return;
+  }
+  if (!lista.length) {
+    el.innerHTML = '<div style="background:#f8fafc;border:1px solid var(--bordo);border-radius:8px;padding:22px;text-align:center;color:var(--grigio);font-size:13px;">Nessun consiglio ancora.<br>Il consigliere scriverà qui le sue proposte.</div>';
+    return;
+  }
+  const catCol = { flusso:'#2563eb','da togliere':'#dc2626',estetica:'#7c3aed',semplificazione:'#059669' };
+  const badge  = { approvato:'<span style="color:#059669;font-weight:bold;">✓ Approvato</span>', rifiutato:'<span style="color:#dc2626;">✕ Rifiutato</span>' };
+  lista.sort((a,b) => (a.stato==='proposto'?0:1)-(b.stato==='proposto'?0:1) || (b.impatto||0)-(a.impatto||0));
+  el.innerHTML = lista.map(c => {
+    const col  = catCol[c.categoria] || '#64748b';
+    const risp = c.stato && c.stato !== 'proposto';
+    const stelle = '★'.repeat(Math.max(0, Math.min(5, c.impatto||0)));
+    return `<div style="border:1px solid var(--bordo);border-left:4px solid ${col};border-radius:8px;padding:12px 14px;margin-bottom:10px;background:white;${risp?'opacity:.7;':''}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+        <div style="font-size:13px;font-weight:bold;color:var(--testo);">${esc(c.titolo||'')}</div>
+        <div style="flex-shrink:0;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:${col};">${esc(c.categoria||'')}</div>
+      </div>
+      <div style="font-size:12px;color:#475569;margin:6px 0 8px;line-height:1.45;">${esc(c.descrizione||'')}</div>
+      ${c.nota?`<div style="font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:5px 8px;margin-bottom:8px;">✎ Tua nota: ${esc(c.nota)}</div>`:''}
+      <div style="display:flex;gap:12px;align-items:center;font-size:10px;color:var(--grigio);margin-bottom:${risp?'0':'10px'};">
+        <span title="Impatto" style="color:#f59e0b;">${stelle||'—'}</span>
+        <span>Costo: ${esc(c.costo||'—')}</span>
+        ${c.fonte?`<a href="${esc(c.fonte)}" target="_blank" style="color:var(--accent);">fonte ↗</a>`:''}
+        ${badge[c.stato]||''}
+      </div>
+      ${risp?'':`<div style="display:flex;gap:6px;">
+        <button class="btn btn-green" style="font-size:11px;padding:5px 12px;" onclick="rispondiConsiglio('${c.id}','approvato')">Sì</button>
+        <button class="btn" style="font-size:11px;padding:5px 12px;background:#e2e8f0;color:#334155;border-color:#cbd5e1;" onclick="rispondiConsiglio('${c.id}','rifiutato')">No</button>
+        <button class="btn" style="font-size:11px;padding:5px 12px;background:#f59e0b;border-color:#f59e0b;" onclick="rispondiConsiglioModifica('${c.id}')">Sì, ma con modifiche</button>
+      </div>`}
+    </div>`;
+  }).join('');
+}
+
+async function rispondiConsiglio(id, stato, nota) {
+  try {
+    await fetch('/api/prima-nota/consigli/rispondi', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, stato, nota: nota||'' })
+    });
+  } catch(e) {}
+  renderConsigli();
+}
+
+function rispondiConsiglioModifica(id) {
+  const nota = prompt('Cosa vorresti cambiare in questo consiglio?');
+  if (nota === null || !nota.trim()) return;
+  rispondiConsiglio(id, 'proposto', nota.trim());
 }
 
 function renderAll() {
@@ -1348,38 +1558,47 @@ function renderKpi() {
 // ─── Sidebar ─────────────────────────────────────
 function renderSidebar() {
   const gg = CALENDARIO_2026[meseAt]||[];
+  const eu = v => { const x = parseFloat(v)||0; return x===0 ? '' : _itFmt(x); }; // 2 decimali, senza €
   let h = `<div class="sb-month">${MESI[meseAt]} 2026</div>`;
+  h += `<div class="sb-head"><span></span><span>Incasso</span><span>Ricev.</span><span>Fatt.</span></div>`;
+  let tRic = 0, tFatt = 0;
   gg.forEach(g => {
+    const d = D[g.iso] || {};
     const rip = riportoPrecedente(g.iso);
     const c = calcG(g.iso, rip);
-    const hasData = c.lordo > 0 || c.totVers > 0 || c.totPagCont > 0;
+    const ric = n(d.ricevuteImporto), fatt = n(d.fattImporto);
+    tRic += ric; tFatt += fatt;
+    const hasData = c.lordo > 0 || c.totVers > 0 || c.totPagCont > 0 || Math.abs(c.contGiorno) > 0.005;
     const hasDiff = c.lordo > 0 && Math.abs(c.diffInc) > 0.005;
     const act = g.iso===isoAt;
-    let dot = `<div class="dot-e"></div>`;
-    if (hasData && hasDiff) dot = `<div class="dot-w"></div>`;
-    else if (hasData) dot = `<div class="dot-g"></div>`;
-    let amtHtml = '';
+    // Colonna Incasso (non arrotondata)
+    let inc = '<span class="gi-amt"></span>';
     if (c.lordo > 0) {
-      const cls = hasDiff ? 'warn' : 'pos';
-      amtHtml = `<div class="gi-amt ${cls}">${fmtK(c.lordo)}${hasDiff?' ⚠':''}</div>`;
+      inc = `<span class="gi-amt ${hasDiff?'warn':'pos'}">${_itFmt(c.lordo)}${hasDiff?' ⚠':''}</span>`;
     } else if (c.totVers > 0) {
-      amtHtml = `<div class="gi-amt neg" title="Versamento banca">−${fmtK(c.totVers)}</div>`;
+      inc = `<span class="gi-amt neg" title="Versamento banca">−${_itFmt(c.totVers)}</span>`;
+    } else if (Math.abs(c.contGiorno) > 0.005) {
+      const neg = c.contGiorno < 0;
+      inc = `<span class="gi-amt ${neg?'neg':'pos'}" title="Movimento di cassa">${neg?'−':'+'}${_itFmt(Math.abs(c.contGiorno))}</span>`;
     }
-    h += `<div class="gi${act?' active':''}" onclick="selGiorno('${g.iso}')">
-      <div class="gi-wd${g.w?' wk':''}">${g.wd}</div>
-      <div class="gi-num">${g.d}</div>
-      <div class="gi-body">
-        ${D[g.iso]&&D[g.iso].note ? `<div class="gi-note">${esc(D[g.iso].note)}</div>` : ''}
-        ${amtHtml}
+    const note = d.note ? esc(d.note) : '';
+    h += `<div class="gi${act?' active':''}${hasData?'':' vuoto'}" onclick="selGiorno('${g.iso}')"${note?` title="${note}"`:''}>
+      ${note ? `<div class="gi-note">${note}</div>` : ''}
+      <div class="gi-cols">
+        <span class="gi-day"><span class="gi-wd${g.w?' wk':''}">${g.wd}</span> ${g.d}</span>
+        ${inc}
+        <span class="gi-sub">${eu(ric)}</span>
+        <span class="gi-sub">${eu(fatt)}</span>
       </div>
-      ${dot}
     </div>`;
   });
   const t = totMese(meseAt);
-  if (t.lordo > 0) {
+  if (t.lordo > 0 || tRic > 0 || tFatt > 0) {
     h += `<div class="sb-total">
-      <span class="sb-tot-label">Totale ${MESI[meseAt]}</span>
-      <span class="sb-tot-val">${fmt(t.lordo)}</span>
+      <span class="sb-tot-label">Tot ${MESI[meseAt]}</span>
+      <span class="sb-tot-val">${t.lordo>0?_itFmt(t.lordo):''}</span>
+      <span class="sb-tot-sub">${eu(tRic)}</span>
+      <span class="sb-tot-sub">${eu(tFatt)}</span>
     </div>`;
   }
   document.getElementById('sidebar').innerHTML = h;
@@ -1410,14 +1629,19 @@ function renderDettaglio() {
 
   // helper per blocco a colonna con più righe
   // colorInput: false/null = no colore | true = rosso | stringa CSS = colore custom
-  function righeHtml(cat, labelRow, colorInput) {
+  function righeHtml(cat, labelRow, colorInput, conMetodo) {
     const colorCss = typeof colorInput === 'string' ? colorInput
                    : (colorInput ? 'var(--rosso)' : '');
     const lista = d[cat]||[];
     const rows = lista.map((r,i) => `
-      <div class="pag-row">
+      <div class="pag-row${conMetodo?' with-met':''}">
         <input type="text" value="${esc(r.desc)}" placeholder="${labelRow}"
           onchange="updVoce('${iso}','${cat}',${i},'desc',this.value)">
+        ${conMetodo ? `<select class="pag-metodo" onchange="updVoce('${iso}','${cat}',${i},'metodo',this.value)">
+          <option value="carta"${(r.metodo||'carta')==='carta'?' selected':''}>Carta</option>
+          <option value="bonifico"${r.metodo==='bonifico'?' selected':''}>Bonifico</option>
+          <option value="contanti"${r.metodo==='contanti'?' selected':''}>Contanti</option>
+        </select>` : ''}
         <input type="text" inputmode="decimal" class="mono"
           style="font-family:var(--mono);text-align:right;font-size:13px;padding:6px 8px;border:1px solid var(--bordo);border-radius:5px;background:#f8fafc;width:100%;${colorCss?'color:'+colorCss+';':''}"
           value="${fmtNum(r.importo)}" placeholder="0,00"
@@ -1437,8 +1661,8 @@ function renderDettaglio() {
   const { rows: rExt, tot: totExt }   = righeHtml('extra','Descrizione libera...', true);
 
   // ─ Anticipi e caparre (negativo) / Chiusura anticipi (positivo) ─
-  const { rows: rAnticip,      tot: totAnticip }      = righeHtml('anticip',      'es. Acconto Rossi – doc. non fiscale…', '#c2410c');
-  const { rows: rChiusAnticip, tot: totChiusAnticip } = righeHtml('chiusAnticip', 'es. Saldo Rossi – doc. fiscale…',       '#059669');
+  const { rows: rAnticip,      tot: totAnticip }      = righeHtml('anticip',      'es. ricevuta n. 123 – fiscalizzo anticipo…', '#c2410c', true);
+  const { rows: rChiusAnticip, tot: totChiusAnticip } = righeHtml('chiusAnticip', 'es. acconto Rossi – già pagato…',            '#059669', true);
 
   // ─ Uscite ─
   const { rows: rPag, tot: totPag }   = righeHtml('pagCont','es. Fornitore, bolletta...', true);
@@ -1487,6 +1711,9 @@ function renderDettaglio() {
       </div>
       ${d.ricevuta ? `<div class="ric-badge">Ric. n° ${esc(d.ricevuta)}</div>` : '<div></div>'}
     </div>
+
+    <div class="detail-2col">
+    <div class="detail-col-l">
 
     <!-- RIPORTO DAL GIORNO PRECEDENTE -->
     ${iso === '2026-01-01' ? `
@@ -1571,13 +1798,16 @@ function renderDettaglio() {
       </div>
     </div>
 
+    </div><!-- /detail-col-l -->
+    <div class="detail-col-r">
+
     <!-- ══ SEZIONE 2: MOVIMENTI DI CASSA ══ -->
     <div class="sez" style="background:#fefce8;">
       <div class="sez-title">Movimenti di cassa</div>
 
       <!-- POS -->
       <div class="pag-block">
-        <div class="pag-block-title">POS <span>${totPos>0?fmt(totPos,false):''}</span></div>
+        <div class="pag-block-title">Carte di credito <span>${totPos>0?fmt(totPos,false):''}</span></div>
         <input type="text" inputmode="decimal" class="pos-single-input"
           value="${fmtNum(totPos)}" placeholder="0,00"
           onfocus="numFocus(this)" onblur="numBlur(this)"
@@ -1631,13 +1861,14 @@ function renderDettaglio() {
             <span class="rr-desc">${esc(r.desc)}</span>
             <span class="rr-badge" style="background:${badgeCol}22;color:${badgeCol}">${badgeTxt}</span>
             <span class="rr-amt" style="color:${amtCol}">${segno}${fmt(r.importo)}</span>
+            <button class="rr-del" title="Annulla rientro — il sospeso torna tra quelli aperti" onclick="eliminaRientro('${r.sospeso_id}','${iso}')">×</button>
           </div>`;
         return `<div class="pag-block" style="border-left:3px solid #0369a1;padding-left:6px;margin-bottom:8px;">
           <div class="pag-block-title" style="border-left:none;padding-left:0;color:#0369a1;">
             Rientri sospesi
             <span style="color:#0369a1;">${fmt(totRP+totRC+totRB,false)}</span>
           </div>
-          ${rPos.map(r=>riga(r,'#fffbeb','#b45309','POS →','#b45309','+')).join('')}
+          ${rPos.map(r=>riga(r,'#fffbeb','#b45309','CARTE →','#b45309','+')).join('')}
           ${rCont.map(r=>riga(r,'#f0fdf4','#15803d','CONT. +','#15803d','+')).join('')}
           ${rBon.map(r=>riga(r,'#f0f9ff','#0369a1','BON.','#0369a1','')).join('')}
         </div>`;
@@ -1668,7 +1899,7 @@ function renderDettaglio() {
         <div>
           <div class="totale-cassa-label">Contanti del giorno</div>
           <div id="pn-cassa-sub" style="font-size:9px;color:#64748b;margin-top:2px;">
-            Lordo ${fmt(c.lordo,true)}${c.totPos>0?' − POS '+fmt(c.totPos):''}${c.totBon>0?' − Bon. '+fmt(c.totBon):''}${c.totSos>0?' − Sos. '+fmt(c.totSos):''}${c.totExt>0?' − Altro '+fmt(c.totExt):''}${c.totAnticip>0?' − Anticipi '+fmt(c.totAnticip):''}${c.totChiusAnticip>0?' + Chiusura '+fmt(c.totChiusAnticip):''}
+            Lordo ${fmt(c.lordo,true)}${c.totPos>0?' − Carte '+fmt(c.totPos):''}${c.totBon>0?' − Bon. '+fmt(c.totBon):''}${c.totSos>0?' − Sos. '+fmt(c.totSos):''}${c.totExt>0?' − Altro '+fmt(c.totExt):''}${c.totAnticip>0?' − Anticipi '+fmt(c.totAnticip):''}${c.totChiusAnticip>0?' + Chiusura '+fmt(c.totChiusAnticip):''}
           </div>
         </div>
         <div id="pn-cassa-val" class="totale-cassa-val">${fmt(c.contGiorno)}</div>
@@ -1694,6 +1925,9 @@ function renderDettaglio() {
 
     <!-- ULTIMA SEZIONE: contanti fisici (invariata) -->
     ${alertFin}
+
+    </div><!-- /detail-col-r -->
+    </div><!-- /detail-2col -->
 
   </div>`;
 }
@@ -1721,7 +1955,7 @@ function ensureD(iso) {
 function updPos(iso, val) {
   ensureD(iso);
   const v = parseFloat(val) || 0;
-  D[iso].pos = v > 0 ? [{desc: 'POS', importo: v}] : [];
+  D[iso].pos = v > 0 ? [{desc: 'Carte di credito', importo: v}] : [];
   _invalidaCache();
   renderKpi(); renderSidebar();
   refreshCalcCard(iso);
@@ -1950,7 +2184,7 @@ function generaCsvCommercialista(meseIdx, soloAnteprima) {
   righe.push([
     q('DATA'), q('GG'),
     q('CHIUSURA DI CASSA'),
-    q('POS / CARTASÌ'), q('SOSPESI'), q('ALTRI'),
+    q('CARTE DI CREDITO'), q('SOSPESI'), q('ALTRI'),
     q('TOT. NON CONTANTI'),
     q('CONTANTI GIORNO'),
     q('VERSAMENTO BANCA'),
@@ -2064,7 +2298,7 @@ function esportaCsv() {
     'INCASSO LORDO',
     'RICEVUTE DESC','RICEVUTE €',
     'DIFF. QUADRATURA',
-    'POS DESC','POS €',
+    'CARTE DI CREDITO DESC','CARTE DI CREDITO €',
     'BONIFICO DESC','BONIFICO €',
     'SOSPESI DESC','SOSPESI €',
     'ALTRO DESC','ALTRO €',
@@ -2242,6 +2476,25 @@ function confermRientro(sid) {
   }
 }
 
+// Annulla un rientro dalla colonna "Rientri sospesi" (sinistra):
+// rimuove la riga del rientro e RIAPRE il sospeso, che torna in "Sospesi aperti" (destra).
+function eliminaRientro(sid, iso) {
+  if (!confirm('Annullare questo rientro? Il sospeso tornerà tra quelli aperti.')) return;
+  const s = getSospesoGlobali().find(x => x.id === sid);
+  // Togli la riga di rientro dal giorno mostrato e (per sicurezza) dal giorno in cui era registrato
+  const giorni = new Set([iso]);
+  if (s?.rientro?.data) giorni.add(s.rientro.data);
+  giorni.forEach(g => {
+    if (D[g]?.rientriSospesi) D[g].rientriSospesi = D[g].rientriSospesi.filter(r => r.sospeso_id !== sid);
+  });
+  // Riapri il sospeso collegato
+  if (s) s.rientro = null;
+  _invalidaCache();
+  salvaDati();
+  renderAll();
+  notif('↩︎ Rientro annullato — sospeso riaperto');
+}
+
 function salvaDescSospeso(sid, nuovaDesc) {
   const lista = getSospesoGlobali();
   const s = lista.find(x => x.id === sid);
@@ -2296,7 +2549,10 @@ function renderSospesoPanel() {
     <div class="sp-item">
       <div class="sp-item-top">
         <span class="sp-item-data">${fmtData(s.dataApertura)}</span>
-        <span class="sp-item-amt">${fmt(s.importo)}</span>
+        <span class="sp-item-right">
+          <span class="sp-item-amt">${fmt(s.importo)}</span>
+          <button class="sp-item-del" title="Elimina sospeso (es. inserito due volte)" onclick="delSospeso('${s.id}')">×</button>
+        </span>
       </div>
       <div class="sp-item-desc">${esc(s.desc)}</div>
       ${parz ? `<div class="sp-warn-badge">⚠ Parziale: ricevuto ${fmt(s.rientro.importo)} — da completare</div>` : ''}
@@ -2313,7 +2569,7 @@ function renderSospesoPanel() {
         <label class="sp-form-label">Metodo di pagamento</label>
         <select id="spm-${s.id}">
           <option value="bonifico"${s.rientro?.metodo==='bonifico'?' selected':''}>Bonifico</option>
-          <option value="pos"${s.rientro?.metodo==='pos'?' selected':''}>Carta / POS</option>
+          <option value="pos"${s.rientro?.metodo==='pos'?' selected':''}>Carte di credito</option>
           <option value="contanti"${s.rientro?.metodo==='contanti'?' selected':''}>Contante</option>
         </select>
         <div class="sp-btn-row">
@@ -2326,6 +2582,50 @@ function renderSospesoPanel() {
 }
 
 // ══════════════════════════════════════════════════
+// AGGIORNAMENTO AUTOMATICO dalla postazione principale
+// ══════════════════════════════════════════════════
+// Sul Mac "madre" non parte mai (il server risponde disponibile:false).
+// Sulle altre postazioni: all'apertura controlla se c'è una versione nuova,
+// mostra "Applicazione in aggiornamento", la scarica e riapre da sola.
+function _aggOverlay(msg, pct) {
+  const el = document.getElementById('overlayAgg');
+  if (!el) return;
+  el.style.display = 'flex';
+  if (msg) document.getElementById('overlayAggMsg').textContent = msg;
+  if (pct) document.getElementById('overlayAggBar').style.width = pct + '%';
+}
+
+async function controllaAggiornamento() {
+  let d;
+  try {
+    const r = await fetch('/api/prima-nota/aggiornamento', { cache:'no-store' });
+    d = await r.json();
+  } catch(e) { return; }                 // senza internet si continua normalmente
+  if (!d || !d.disponibile) return;
+
+  _aggOverlay('Scarico la nuova versione…', 35);
+  try {
+    await fetch('/api/prima-nota/aggiornamento/applica', { method:'POST' });
+  } catch(e) { /* il server si chiude durante il riavvio: è normale */ }
+
+  _aggOverlay('Riavvio l\'applicazione…', 70);
+  // aspetta che il server torni su (riavviato dal sistema), poi ricarica
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try {
+      const p = await fetch('/', { method:'HEAD', cache:'no-store' });
+      if (p.ok) {
+        _aggOverlay('Fatto — riapro l\'applicazione aggiornata.', 100);
+        await new Promise(r => setTimeout(r, 700));
+        location.reload();
+        return;
+      }
+    } catch(e) { /* ancora in riavvio */ }
+  }
+  _aggOverlay('Aggiornamento non riuscito. Chiudi e riapri l\'applicazione.', 100);
+}
+
+// ══════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════
 // Init: carica prima dal server (async), poi renderizza
@@ -2333,6 +2633,7 @@ function renderSospesoPanel() {
   await caricaDati();
   aggiornaRiportoAnnoUI();
   renderAll();
+  controllaAggiornamento();   // in fondo: non blocca l'avvio
 })();
 </script>
 </body>

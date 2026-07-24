@@ -6,10 +6,12 @@ App Flask standalone — porta 5001 — http://localhost:5001
 
 import os
 import json
+import time
 import signal
 import atexit
 import threading
 import datetime
+import subprocess
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify
 
@@ -24,6 +26,14 @@ DATA_FILE   = DATA_DIR / 'prima_nota_data.json'
 BACKUP_FILE = DATA_DIR / 'prima_nota_data.bak.json'
 BACKUP_DIR  = DATA_DIR / 'backups'
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+CONSIGLI_FILE = DATA_DIR / 'consigli.json'   # proposte del consigliere
+
+# ─── Aggiornamento automatico dalla "madre" (GitHub) ──────────────
+# CODE_DIR = cartella del codice (è una copia git sulle "figlie").
+# Se esiste il file .madre questo Mac è la MADRE: non si aggiorna MAI da solo
+# (altrimenti un `git reset --hard` cancellerebbe il lavoro in corso).
+CODE_DIR = Path(__file__).parent
+MARCATORE_MADRE = CODE_DIR / '.madre'
 
 def _migra_dati_legacy():
     """Una-tantum: se i dati erano nella vecchia posizione (dentro la
@@ -150,24 +160,152 @@ def prima_nota_salva():
     # - il browser può aggiungere ID nuovi (non ancora nel server e non eliminati)
     # - ID in __sospesi_eliminati__ non vengono mai ripristinati (neanche da tab vecchi)
     if '__sospesi__' in _dati_in_memoria:
-        eliminati = set(_dati_in_memoria.get('__sospesi_eliminati__', []))
+        # Tombstone: unisci quelle già note al server E quelle appena arrivate dal
+        # browser, così una cancellazione viene rispettata subito (prima si leggevano
+        # solo quelle del server e il sospeso cancellato tornava indietro).
+        eliminati = set(_dati_in_memoria.get('__sospesi_eliminati__', [])) \
+                  | set(dati.get('__sospesi_eliminati__', []))
         srv = {s['id']: s for s in _dati_in_memoria['__sospesi__'] if isinstance(s, dict) and 'id' in s}
         brw = {s['id']: s for s in dati.get('__sospesi__', []) if isinstance(s, dict) and 'id' in s}
-        merged = dict(srv)
+        # Base = sospesi del server MENO quelli con tombstone: un cancellato non torna più.
+        merged = {sid: s for sid, s in srv.items() if sid not in eliminati}
         for sid, entry in brw.items():
             if sid in eliminati:
                 continue                    # tombstoned: non ripristinare mai
-            if sid in merged:
-                merged[sid] = entry         # aggiorna stato esistente (es. rientro)
-            else:
-                merged[sid] = entry         # nuovo sospeso aggiunto dal browser
+            merged[sid] = entry             # aggiorna esistenti o aggiunge nuovi
         dati['__sospesi__'] = list(merged.values())
-        # propaga la lista tombstone
-        dati['__sospesi_eliminati__'] = list(eliminati | set(dati.get('__sospesi_eliminati__', [])))
+        # propaga la lista tombstone (unione completa)
+        dati['__sospesi_eliminati__'] = list(eliminati)
     _dati_in_memoria = dati
     _salva_su_disco()
     giorni = sum(1 for k in _dati_in_memoria if not k.startswith('__'))
     return jsonify({'ok': True, 'giorni': giorni})
+
+
+@app.route('/api/prima-nota/backup', methods=['POST'])
+def prima_nota_backup():
+    """Copia di sicurezza su richiesta (pulsante Controllo): salva una copia
+    con data e ora nell'unica cartella dei backup. Non cancella mai nulla."""
+    import shutil
+    if not DATA_FILE.exists():
+        return jsonify({'ok': False, 'errore': 'Nessun file dati da salvare'}), 404
+    ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    dest = BACKUP_DIR / f'prima_nota_{ts}.json'
+    try:
+        shutil.copy2(DATA_FILE, dest)
+    except Exception as e:
+        return jsonify({'ok': False, 'errore': str(e)}), 500
+    return jsonify({'ok': True, 'file': dest.name, 'percorso': str(dest)})
+
+
+@app.route('/api/prima-nota/consigli', methods=['GET'])
+def prima_nota_consigli():
+    """Restituisce le proposte del consigliere (consigli.json)."""
+    try:
+        consigli = json.load(open(CONSIGLI_FILE, encoding='utf-8')) if CONSIGLI_FILE.exists() else []
+        if not isinstance(consigli, list):
+            consigli = []
+    except Exception:
+        consigli = []
+    return jsonify({'ok': True, 'consigli': consigli})
+
+
+@app.route('/api/prima-nota/consigli/rispondi', methods=['POST'])
+def prima_nota_consigli_rispondi():
+    """Marco risponde a un consiglio: Sì (approvato) / No (rifiutato) /
+    Sì ma con modifiche (torna 'proposto' con una nota)."""
+    payload = request.get_json(silent=True) or {}
+    cid = payload.get('id')
+    stato = payload.get('stato')
+    nota = payload.get('nota', '')
+    if not cid or stato not in ('proposto', 'approvato', 'rifiutato'):
+        return jsonify({'ok': False, 'errore': 'Dati non validi'}), 400
+    try:
+        consigli = json.load(open(CONSIGLI_FILE, encoding='utf-8')) if CONSIGLI_FILE.exists() else []
+    except Exception:
+        consigli = []
+    trovato = False
+    for c in consigli:
+        if isinstance(c, dict) and str(c.get('id')) == str(cid):
+            c['stato'] = stato
+            if nota:
+                c['nota'] = nota
+            trovato = True
+            break
+    if not trovato:
+        return jsonify({'ok': False, 'errore': 'Consiglio non trovato'}), 404
+    try:
+        tmp = CONSIGLI_FILE.with_suffix('.tmp')
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(consigli, f, ensure_ascii=False, indent=2)
+        tmp.replace(CONSIGLI_FILE)
+    except Exception as e:
+        return jsonify({'ok': False, 'errore': str(e)}), 500
+    return jsonify({'ok': True})
+
+
+def _git(*args, timeout=30):
+    """Comando git nella cartella del codice."""
+    return subprocess.run(['git', '-C', str(CODE_DIR)] + list(args),
+                          capture_output=True, text=True, timeout=timeout)
+
+
+def _stato_aggiornamento():
+    """(disponibile, info) — c'è una versione nuova sulla madre?
+    Mai sulla MADRE, mai se ci sono modifiche locali (non si distrugge lavoro)."""
+    if MARCATORE_MADRE.exists():
+        return False, {'motivo': 'madre'}
+    if not (CODE_DIR / '.git').exists():
+        return False, {'motivo': 'non-git'}
+    try:
+        if _git('status', '--porcelain').stdout.strip():
+            return False, {'motivo': 'modifiche-locali'}
+        _git('fetch', '--quiet', 'origin')
+        locale = _git('rev-parse', 'HEAD').stdout.strip()
+        remoto = _git('rev-parse', 'origin/main').stdout.strip()
+        if not remoto:
+            return False, {'motivo': 'nessun-remoto'}
+        return (locale != remoto), {'locale': locale[:7], 'remoto': remoto[:7]}
+    except Exception as e:
+        return False, {'motivo': 'errore', 'errore': str(e)}
+
+
+@app.route('/api/prima-nota/aggiornamento', methods=['GET'])
+def prima_nota_aggiornamento():
+    """Dice all'app se esiste una versione più nuova pubblicata dalla madre."""
+    disponibile, info = _stato_aggiornamento()
+    return jsonify({'ok': True, 'disponibile': disponibile, **info})
+
+
+@app.route('/api/prima-nota/aggiornamento/applica', methods=['POST'])
+def prima_nota_aggiornamento_applica():
+    """Scarica la nuova versione e riavvia il server.
+    I DATI non vengono MAI toccati: vivono fuori dalla cartella del codice."""
+    disponibile, info = _stato_aggiornamento()
+    if not disponibile:
+        return jsonify({'ok': False, 'errore': 'nessun aggiornamento', **info}), 400
+    try:
+        r = _git('reset', '--hard', 'origin/main')
+        if r.returncode != 0:
+            return jsonify({'ok': False, 'errore': (r.stderr or '')[:300]}), 500
+        # dipendenze, se cambiate
+        venv_py = CODE_DIR / 'venv' / 'bin' / 'python'
+        req = CODE_DIR / 'requirements.txt'
+        if venv_py.exists() and req.exists():
+            try:
+                subprocess.run([str(venv_py), '-m', 'pip', 'install', '--quiet', '-r', str(req)],
+                               capture_output=True, timeout=180)
+            except Exception:
+                pass
+        _salva_su_disco()          # dati al sicuro prima di uscire
+        # Riavvio: esco, il LaunchAgent (KeepAlive) rimette su il server col codice nuovo.
+        def _riavvia():
+            time.sleep(1.0)
+            os._exit(0)
+        threading.Thread(target=_riavvia, daemon=True).start()
+        return jsonify({'ok': True, 'versione': _git('rev-parse', 'HEAD').stdout.strip()[:7]})
+    except Exception as e:
+        return jsonify({'ok': False, 'errore': str(e)}), 500
 
 
 @app.route('/api/prima-nota/parse-numbers', methods=['POST'])

@@ -16,3 +16,6 @@ avvia.command
 
 # ─── macOS ───
 .DS_Store
+
+# ─── Marcatore: questo Mac è la MADRE (non si auto-aggiorna). Mai versionato ───
+.madre
