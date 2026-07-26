@@ -99,10 +99,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
   border-right: 1px solid var(--bordo); overflow-y: auto; padding: 6px 0;
 }
 .sb-month { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--grigio); padding: 5px 12px 3px; }
-.sb-head { display: grid; grid-template-columns: 58px 1fr 1fr 1fr; gap: 4px; padding: 2px 12px 4px; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; color: var(--grigio); border-bottom: 1px solid var(--bordo); }
+.sb-head { display: grid; grid-template-columns: 52px 1fr 1fr 1fr 1fr; gap: 4px; padding: 2px 12px 4px; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; color: var(--grigio); border-bottom: 1px solid var(--bordo); }
 .sb-head span { text-align: right; }
 .sb-head span:first-child { text-align: left; }
-.sb-total { display: grid; grid-template-columns: 58px 1fr 1fr 1fr; gap: 4px; margin: 6px 8px 2px; padding: 8px 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; align-items: baseline; }
+.sb-total { display: grid; grid-template-columns: 52px 1fr 1fr 1fr 1fr; gap: 4px; margin: 6px 8px 2px; padding: 8px 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; align-items: baseline; }
 .sb-tot-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #0369a1; font-weight: bold; text-align: left; }
 .sb-tot-val { font-family: var(--mono); font-size: 12px; font-weight: bold; color: #0369a1; text-align: right; }
 .sb-tot-sub { font-family: var(--mono); font-size: 11px; font-weight: bold; color: #0369a1; text-align: right; }
@@ -111,7 +111,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
 .gi.active { background: #eff6ff; border-left-color: var(--accent); }
 .gi.vuoto { opacity: .4; }
 .gi-note { font-size: 9px; color: var(--grigio); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
-.gi-cols { display: grid; grid-template-columns: 58px 1fr 1fr 1fr; gap: 4px; align-items: baseline; }
+.gi-cols { display: grid; grid-template-columns: 52px 1fr 1fr 1fr 1fr; gap: 4px; align-items: baseline; }
 .gi-day { font-size: 11px; font-family: var(--mono); white-space: nowrap; }
 .gi-wd { color: var(--grigio); }
 .gi-wd.wk { color: #dc2626; }
@@ -122,6 +122,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
 .gi-amt.neg { color: var(--rosso); }
 .gi-amt.warn { color: #b45309; }
 .gi-sub { font-size: 10px; color: var(--grigio); }
+.gi-vers { font-family: var(--mono); font-size: 11px; font-weight: bold; color: var(--rosso); text-align: right; white-space: nowrap; }
+.sb-tot-vers { font-family: var(--mono); font-size: 11px; font-weight: bold; color: var(--rosso); text-align: right; }
 
 /* ─── PANNELLO DETTAGLIO ─── */
 .detail { flex: 1; overflow-y: auto; padding: 18px 22px; background: var(--bg); }
@@ -1560,8 +1562,8 @@ function renderSidebar() {
   const gg = CALENDARIO_2026[meseAt]||[];
   const eu = v => { const x = parseFloat(v)||0; return x===0 ? '' : _itFmt(x); }; // 2 decimali, senza €
   let h = `<div class="sb-month">${MESI[meseAt]} 2026</div>`;
-  h += `<div class="sb-head"><span></span><span>Incasso</span><span>Ricev.</span><span>Fatt.</span></div>`;
-  let tRic = 0, tFatt = 0;
+  h += `<div class="sb-head"><span></span><span>Vers.</span><span>Incasso</span><span>Ricev.</span><span>Fatt.</span></div>`;
+  let tRic = 0, tFatt = 0, tVers = 0;
   gg.forEach(g => {
     const d = D[g.iso] || {};
     const rip = riportoPrecedente(g.iso);
@@ -1575,17 +1577,21 @@ function renderSidebar() {
     let inc = '<span class="gi-amt"></span>';
     if (c.lordo > 0) {
       inc = `<span class="gi-amt ${hasDiff?'warn':'pos'}">${_itFmt(c.lordo)}${hasDiff?' ⚠':''}</span>`;
-    } else if (c.totVers > 0) {
-      inc = `<span class="gi-amt neg" title="Versamento banca">−${_itFmt(c.totVers)}</span>`;
     } else if (Math.abs(c.contGiorno) > 0.005) {
       const neg = c.contGiorno < 0;
       inc = `<span class="gi-amt ${neg?'neg':'pos'}" title="Movimento di cassa">${neg?'−':'+'}${_itFmt(Math.abs(c.contGiorno))}</span>`;
     }
+    // Versamenti in banca: colonna a sé, sempre in ROSSO (colpo d'occhio sul mese)
+    tVers += c.totVers;
+    const vers = c.totVers > 0
+      ? `<span class="gi-vers" title="Versamento in banca">−${_itFmt(c.totVers)}</span>`
+      : '<span class="gi-vers"></span>';
     const note = d.note ? esc(d.note) : '';
     h += `<div class="gi${act?' active':''}${hasData?'':' vuoto'}" onclick="selGiorno('${g.iso}')"${note?` title="${note}"`:''}>
       ${note ? `<div class="gi-note">${note}</div>` : ''}
       <div class="gi-cols">
         <span class="gi-day"><span class="gi-wd${g.w?' wk':''}">${g.wd}</span> ${g.d}</span>
+        ${vers}
         ${inc}
         <span class="gi-sub">${eu(ric)}</span>
         <span class="gi-sub">${eu(fatt)}</span>
@@ -1593,9 +1599,10 @@ function renderSidebar() {
     </div>`;
   });
   const t = totMese(meseAt);
-  if (t.lordo > 0 || tRic > 0 || tFatt > 0) {
+  if (t.lordo > 0 || tRic > 0 || tFatt > 0 || tVers > 0) {
     h += `<div class="sb-total">
       <span class="sb-tot-label">Tot ${MESI[meseAt]}</span>
+      <span class="sb-tot-vers">${tVers>0?'−'+_itFmt(tVers):''}</span>
       <span class="sb-tot-val">${t.lordo>0?_itFmt(t.lordo):''}</span>
       <span class="sb-tot-sub">${eu(tRic)}</span>
       <span class="sb-tot-sub">${eu(tFatt)}</span>
