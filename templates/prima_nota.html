@@ -24,7 +24,7 @@
   --card:      #ffffff;
   --testo:     #1e293b;
   --font:      'Georgia', 'Times New Roman', serif;
-  --mono:      'Courier New', Courier, monospace;
+  --mono:      -apple-system, 'Helvetica Neue', 'Segoe UI', sans-serif; /* cifre pulite; tabular-nums le tiene incolonnate */
 }
 html { font-size: 14px; }
 body { font-family: var(--font); background: var(--bg); color: var(--testo); min-height: 100vh; }
@@ -37,6 +37,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
   position: sticky; top: 0; z-index: 100;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
+html { font-variant-numeric: tabular-nums; } /* cifre a larghezza fissa: le colonne restano incolonnate */
+.antic-sub { font-size:10px; text-transform:uppercase; letter-spacing:.06em; font-weight:bold; margin:2px 0 5px; }
 .header h1 { font-size: 16px; font-weight: normal; letter-spacing: .03em; color: #e2eaf4; }
 .header h1 em { color: #7eb8f7; font-style: italic; }
 .header-right { display: flex; align-items: center; gap: 8px; }
@@ -361,12 +363,12 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
   background:rgba(0,0,0,.55); align-items:center; justify-content:center;
 }
 .modal-overlay.open { display:flex; }
-.modal {
+.modal, .modal-box {
   background:white; border-radius:10px; width:520px; max-width:95vw;
   max-height:85vh; overflow:hidden; display:flex; flex-direction:column;
   box-shadow:0 20px 60px rgba(0,0,0,.4);
 }
-.modal-hdr {
+.modal-hdr, .modal-header {
   background:#4c1d95; color:white; padding:14px 18px;
   display:flex; align-items:center; justify-content:space-between;
 }
@@ -417,11 +419,16 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
     </div>
     <button class="btn" onclick="importaJson()" title="Carica dati salvati (JSON)">📂 Carica</button>
     <button class="btn" style="background:#7c3aed;border-color:#7c3aed;" onclick="importaExcel()" title="Importa da Numbers o Excel">📊 Importa</button>
-    <button class="btn btn-green" onclick="apriModalCommercialista()" title="Esporta il mese per il commercialista (CSV/Excel)">📤 Commercialista</button>
-    <button class="btn" style="background:#166534;border-color:#166534;" onclick="salvaJson()">💾 Salva JSON</button>
-    <button class="btn" style="background:#0e7490;border-color:#0e7490;" onclick="esportaHtmlStandalone()" title="Scarica l'app con i dati integrati — apribile su qualsiasi Mac">💻 Salva HTML</button>
+    <div style="position:relative;display:inline-block;">
+      <button class="btn btn-green" onclick="toggleEsporta(event)" title="Commercialista, Salva JSON, Salva HTML">📤 Esporta ▾</button>
+      <div id="menuEsporta" style="display:none;position:absolute;right:0;top:115%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:6px;z-index:650;min-width:215px;box-shadow:0 10px 26px rgba(0,0,0,.4);">
+        <button class="btn btn-green" style="width:100%;margin-bottom:5px;text-align:left;" onclick="chiudiEsporta();apriModalCommercialista()">📤 Commercialista</button>
+        <button class="btn" style="width:100%;margin-bottom:5px;text-align:left;background:#166534;border-color:#166534;" onclick="chiudiEsporta();salvaJson()">💾 Salva JSON</button>
+        <button class="btn" style="width:100%;text-align:left;background:#0e7490;border-color:#0e7490;" onclick="chiudiEsporta();esportaHtmlStandalone()">💻 Salva HTML</button>
+      </div>
+    </div>
     <button class="btn" style="background:#4338ca;border-color:#4338ca;" onclick="apriControllo()" title="Salva un backup di sicurezza e controlla la quadratura della cassa">🔍 Controllo</button>
-    <button class="btn" style="background:#991b1b;border-color:#991b1b;" onclick="cancellaAnno()" title="Cancella tutti i dati del 2026">🗑 Cancella anno</button>
+    <button class="btn" style="background:#991b1b;border-color:#991b1b;margin-left:22px;" onclick="cancellaAnno()" title="Cancella tutti i dati del 2026">🗑 Cancella anno</button>
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="leggiJson(this)">
     <input type="file" id="xlsInput" accept=".csv,.xlsx,.xls,.numbers" style="display:none" onchange="leggiExcel(this)">
   </div>
@@ -474,7 +481,6 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
         <th>Gg.</th>
         <th>Incasso lordo</th>
         <th>Storni digitali</th>
-        <th>Pag. contanti</th>
         <th>Versamenti</th>
         <th>Contanti fisici</th>
       </tr></thead>
@@ -503,7 +509,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
       <button onclick="document.getElementById('modalCommercialista').classList.remove('open')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12px;color:#94a3b8;margin:0 0 14px;">Seleziona il mese da inviare. Verrà scaricato un file CSV apribile con Excel, pronto per il commercialista.</p>
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 14px;">Seleziona il mese. Viene creato il file Excel e messo dentro una nuova e-mail per il commercialista (mara@bianchipizzetti.it), oggetto e allegato già pronti: tu controlli e premi Invia.</p>
       <div id="commMesiGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
       <div id="commAnteprima" style="margin-top:16px;display:none;">
         <div style="background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;font-size:10px;font-family:monospace;color:#94a3b8;white-space:pre;overflow-x:auto;max-height:200px;overflow-y:auto;" id="commAnteprimaText"></div>
@@ -512,7 +518,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--testo); min
     </div>
     <div class="modal-footer" style="gap:8px;">
       <button class="btn" style="color:#374151;" onclick="document.getElementById('modalCommercialista').classList.remove('open')">Annulla</button>
-      <button class="btn btn-green" id="btnScaricoComm" style="display:none;" onclick="scaricaCsvCommercialista()">⬇ Scarica CSV</button>
+      <button class="btn" id="btnScaricoComm" style="display:none;color:#374151;" onclick="scaricaExcelCommercialista()">⬇ Solo il file Excel</button>
+      <button class="btn btn-green" id="btnMailComm" style="display:none;" onclick="inviaEmailCommercialista()">✉️ E-mail con l'Excel</button>
     </div>
   </div>
 </div>
@@ -669,6 +676,18 @@ function salvaDati() {
 
 // ─── Salvataggio manuale su FILE JSON (Download) ──────────
 // Usa "Esporta HTML standalone" per una copia portabile.
+
+// ─── Menu Esporta (consiglio approvato: header più pulito) ───
+function toggleEsporta(ev) {
+  ev.stopPropagation();
+  const m = document.getElementById('menuEsporta');
+  if (m) m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+function chiudiEsporta() {
+  const m = document.getElementById('menuEsporta');
+  if (m) m.style.display = 'none';
+}
+document.addEventListener('click', () => chiudiEsporta());
 
 function salvaJson() {
   const payload = {
@@ -1239,7 +1258,7 @@ setInterval(() => { salvaDati(); }, 60000);
 // Salva su server (sendBeacon) alla chiusura del browser/tab
 window.addEventListener('beforeunload', () => { salvaDati(); });
 
-function notif(msg) {
+function notif(msg, durataMs) {
   const el = document.createElement('div');
   el.textContent = msg;
   Object.assign(el.style, {
@@ -1253,7 +1272,7 @@ function notif(msg) {
   });
   document.body.appendChild(el);
   requestAnimationFrame(() => el.style.opacity = '1');
-  setTimeout(() => { el.style.opacity='0'; setTimeout(()=>el.remove(),200); }, 2000);
+  setTimeout(() => { el.style.opacity='0'; setTimeout(()=>el.remove(),200); }, durataMs || 2000);
 }
 
 // ─── Calcoli ─────────────────────────────────────
@@ -1505,6 +1524,7 @@ async function renderConsigli() {
         <span>Costo: ${esc(c.costo||'—')}</span>
         ${c.fonte?`<a href="${esc(c.fonte)}" target="_blank" style="color:var(--accent);">fonte ↗</a>`:''}
         ${badge[c.stato]||''}
+        ${c.realizzato?`<span style="color:#059669;">· realizzato il ${esc(String(c.realizzato).split('-').reverse().join('/'))}</span>`:''}
       </div>
       ${risp?'':`<div style="display:flex;gap:6px;">
         <button class="btn btn-green" style="font-size:11px;padding:5px 12px;" onclick="rispondiConsiglio('${c.id}','approvato')">Sì</button>
@@ -1749,21 +1769,6 @@ function renderDettaglio() {
       <div style="font-family:var(--mono);font-size:17px;font-weight:bold;color:#0369a1;">${fmt(riporto)}</div>
     </div>` : ''}
 
-    <!-- DATI GIORNATA -->
-    <div class="sez">
-      <div class="sez-title">Dati giornata</div>
-      <div class="g2">
-        <div class="fl"><label>Note / descrizione</label>
-          <input type="text" value="${esc(d.note||'')}" placeholder="es. domenica, pos domenica sospeso…"
-            onchange="updCampo('${iso}','note',this.value)">
-        </div>
-        <div class="fl"><label>N° Ricevuta / progressivo</label>
-          <input type="text" value="${esc(d.ricevuta||'')}" placeholder="es. 055"
-            onchange="updCampo('${iso}','ricevuta',this.value)">
-        </div>
-      </div>
-    </div>
-
     <!-- ══ SEZIONE 1: INCASSO DEL GIORNO ══ -->
     <div class="sez" style="background:#f0fdf4;">
       <div class="sez-title">Incasso del giorno</div>
@@ -1789,7 +1794,7 @@ function renderDettaglio() {
       </div>
 
       <!-- Fatture: dal/al n° e note — riga compatta -->
-      <div class="g3">
+      <div class="g3" style="margin-bottom:9px;">
         <div class="fl"><label>Fatture dal n°</label>
           <input type="text" value="${esc(d.fattDal||'')}" placeholder="es. 101"
             onchange="updCampo('${iso}','fattDal',this.value)">
@@ -1803,6 +1808,15 @@ function renderDettaglio() {
             onchange="updCampo('${iso}','fattNote',this.value)">
         </div>
       </div>
+
+      <!-- 💳 Carte sotto "Fatture dal/al" (Marco, 8/09/2026): ricevute → fatture → numeri fattura → carte -->
+      <div>
+        <span class="importo-sub-label">💳 Carte di credito</span>
+        <input type="text" inputmode="decimal" class="pos-single-input"
+          value="${fmtNum(totPos)}" placeholder="0,00"
+          onfocus="numFocus(this)" onblur="numBlur(this)"
+          oninput="updPos('${iso}',parseFmt(this.value))">
+      </div>
     </div>
 
     </div><!-- /detail-col-l -->
@@ -1811,15 +1825,6 @@ function renderDettaglio() {
     <!-- ══ SEZIONE 2: MOVIMENTI DI CASSA ══ -->
     <div class="sez" style="background:#fefce8;">
       <div class="sez-title">Movimenti di cassa</div>
-
-      <!-- POS -->
-      <div class="pag-block">
-        <div class="pag-block-title">Carte di credito <span>${totPos>0?fmt(totPos,false):''}</span></div>
-        <input type="text" inputmode="decimal" class="pos-single-input"
-          value="${fmtNum(totPos)}" placeholder="0,00"
-          onfocus="numFocus(this)" onblur="numBlur(this)"
-          oninput="updPos('${iso}',parseFmt(this.value))">
-      </div>
 
       ${blk('bonifici','Bonifico', rBon, totBon, '')}
 
@@ -1881,24 +1886,19 @@ function renderDettaglio() {
         </div>`;
       })()}
 
-      <!-- Box etichettato "Chiusura anticipi" — valori invariati: categoria anticip, segno −, colore arancio -->
-      <div class="pag-block">
-        <div class="pag-block-title" style="border-left-color:#f97316;color:#9a3412;">
-          Chiusura anticipi
-          <span style="color:#c2410c;">${totAnticip>0?'− '+fmt(totAnticip,false):''}</span>
-        </div>
-        ${rAnticip || `<p class="no-voci">Nessuna voce</p>`}
-        <button class="btn-add" style="border-color:#fdba74;background:#fff7ed;color:#c2410c;" onclick="addVoce('${iso}','anticip')">+ aggiungi chiusura anticipo</button>
-      </div>
-
-      <!-- Box etichettato "Anticipi e caparre" — valori invariati: categoria chiusAnticip, segno +, colore verde -->
+      <!-- ANTICIPI E CAPARRE — riquadro UNICO (consiglio approvato 8/09/2026).
+           Stesse categorie e stessi calcoli di prima: RICEVO = chiusAnticip (+), CHIUDO = anticip (−). -->
       <div class="pag-block">
         <div class="pag-block-title" style="border-left-color:#16a34a;color:#14532d;">
           Anticipi e caparre
-          <span style="color:#059669;">${totChiusAnticip>0?'+ '+fmt(totChiusAnticip,false):''}</span>
+          <span>${totChiusAnticip>0?`<span style="color:#059669;">+ ${fmt(totChiusAnticip,false)}</span>`:''}${totChiusAnticip>0&&totAnticip>0?' · ':''}${totAnticip>0?`<span style="color:#c2410c;">− ${fmt(totAnticip,false)}</span>`:''}</span>
         </div>
-        ${rChiusAnticip || `<p class="no-voci">Nessuna voce</p>`}
-        <button class="btn-add" style="border-color:#86efac;background:#f0fdf4;color:#15803d;" onclick="addVoce('${iso}','chiusAnticip')">+ aggiungi anticipo / caparra</button>
+        <div class="antic-sub" style="color:#15803d;">Ricevo ora — pagato adesso, ricevuta fiscale dopo</div>
+        ${rChiusAnticip || `<p class="no-voci">Nessun anticipo ricevuto</p>`}
+        <button class="btn-add" style="border-color:#86efac;background:#f0fdf4;color:#15803d;" onclick="addVoce('${iso}','chiusAnticip')">+ ricevo anticipo / caparra</button>
+        <div class="antic-sub" style="color:#c2410c;margin-top:10px;">Chiudo oggi — emetto la ricevuta fiscale di un anticipo già pagato</div>
+        ${rAnticip || `<p class="no-voci">Nessuna chiusura</p>`}
+        <button class="btn-add" style="border-color:#fdba74;background:#fff7ed;color:#c2410c;" onclick="addVoce('${iso}','anticip')">+ chiudo anticipo</button>
       </div>
 
       <!-- Totale cassa del giorno — chiude la sezione -->
@@ -1937,6 +1937,13 @@ function renderDettaglio() {
     </div><!-- /detail-2col -->
 
   </div>`;
+
+  // Cursore già dentro "Totale ricevute" quando si APRE un giorno (non a ogni ridisegno)
+  if (window._isoFuoco !== iso) {
+    window._isoFuoco = iso;
+    const primo = panel.querySelector('.importo-sub-field');
+    if (primo) primo.focus();
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -2040,7 +2047,6 @@ function renderRiepilogo() {
       <td style="color:var(--grigio)">${t.nGiorni||'—'}</td>
       <td style="color:var(--accent)">${v?'—':fmt(t.lordo)}</td>
       <td style="color:var(--rosso)">${!v&&t.storni>0?fmt(t.storni):'—'}</td>
-      <td>${!v&&t.pagCont>0?fmt(t.pagCont):'—'}</td>
       <td>${!v&&t.vers>0?fmt(t.vers):'—'}</td>
       <td style="${cF};font-weight:bold">${v?'—':fmtS(t.fisici)+warn}</td>
     </tr>`;
@@ -2051,7 +2057,6 @@ function renderRiepilogo() {
     <td>TOTALE ANNO</td><td>${totG.nGiorni}</td>
     <td style="color:var(--accent)">${fmt(totG.lordo,true)}</td>
     <td style="color:var(--rosso)">${fmt(totG.storni,true)}</td>
-    <td>${fmt(totG.pagCont,true)}</td>
     <td>${fmt(totG.vers,true)}</td>
     <td style="${cFt}">${fmtS(totG.fisici)}</td>
   </tr>`;
@@ -2118,6 +2123,7 @@ function apriModalCommercialista() {
   });
   document.getElementById('commAnteprima').style.display = 'none';
   document.getElementById('btnScaricoComm').style.display = 'none';
+  document.getElementById('btnMailComm').style.display = 'none';
   _commMeseSelezionato = -1;
   document.getElementById('modalCommercialista').classList.add('open');
 }
@@ -2134,30 +2140,93 @@ function selezionaCommMese(idx, el) {
   document.getElementById('commAnteprimaText').textContent = anteprima;
   document.getElementById('commAnteprima').style.display = 'block';
   document.getElementById('btnScaricoComm').style.display = 'inline-block';
-  document.getElementById('btnScaricoComm').textContent = `⬇ Scarica ${MESI[idx]} 2026.csv`;
+  const btnMail = document.getElementById('btnMailComm');
+  btnMail.style.display = 'inline-block';
+  btnMail.textContent = `✉️ E-mail a Mara — ${MESI[idx]} 2026`;
 }
 
-function scaricaCsvCommercialista() {
+// Larghezze colonne Excel (14 colonne, nell'ordine dell'intestazione)
+const LARGHEZZE_COMM = [12, 5, 17, 16, 12, 12, 18, 17, 18, 18, 30, 13, 16, 32];
+
+function _payloadCommercialista(idx) {
+  const {righe, grassetto, messaggio} = generaRigheCommercialista(idx, false);
+  if (messaggio) { notif('⚠️ ' + messaggio); return null; }
+  return {
+    righe, grassetto,
+    mese: MESI[idx],
+    foglio: `${MESI[idx]} 2026`,
+    file: `prima_nota_${MESI[idx].toLowerCase()}_2026.xlsx`,
+    larghezze: LARGHEZZE_COMM
+  };
+}
+
+async function scaricaExcelCommercialista() {
   if (_commMeseSelezionato < 0) return;
-  const csv = generaCsvCommercialista(_commMeseSelezionato, false);
-  const nome = MESI[_commMeseSelezionato].toLowerCase();
-  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `prima_nota_${nome}_2026.csv`;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
-  document.getElementById('modalCommercialista').classList.remove('open');
-  notif(`✅ ${MESI[_commMeseSelezionato]} 2026 — file scaricato per il commercialista`);
+  const idx = _commMeseSelezionato;
+  const payload = _payloadCommercialista(idx);
+  if (!payload) return;
+  const btn = document.getElementById('btnScaricoComm');
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/prima-nota/export/xlsx', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error('risposta ' + resp.status);
+    const blob = await resp.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = payload.file;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    document.getElementById('modalCommercialista').classList.remove('open');
+    notif(`✅ ${MESI[idx]} 2026 — file Excel scaricato`);
+  } catch (e) {
+    notif('❌ Export Excel non riuscito: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
-function generaCsvCommercialista(meseIdx, soloAnteprima) {
+// E-mail per il commercialista con l'Excel già allegato (Marco, 9/09/2026).
+// L'oggetto ("Prima nota ristorante <mese>" qui, "Prima nota suite <mese>"
+// sull'altra postazione) lo decide il server. L'e-mail NON parte da sola:
+// si apre in Mail e Invia lo preme Marco.
+async function inviaEmailCommercialista() {
+  if (_commMeseSelezionato < 0) return;
+  const idx = _commMeseSelezionato;
+  const payload = _payloadCommercialista(idx);
+  if (!payload) return;
+  const btn = document.getElementById('btnMailComm');
+  const etichetta = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Preparo l\'e-mail in Mail…';
+  try {
+    const resp = await fetch('/api/prima-nota/export/email', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const j = await resp.json().catch(() => ({}));
+    if (!resp.ok || !j.ok) throw new Error(j.errore || ('risposta ' + resp.status));
+    document.getElementById('modalCommercialista').classList.remove('open');
+    notif(`✉️ E-mail pronta in Mail per ${j.a} — oggetto «${j.oggetto}». Controlla e premi Invia.`, 10000);
+  } catch (e) {
+    notif('❌ E-mail non creata: ' + e.message, 12000);
+  } finally {
+    btn.disabled = false; btn.textContent = etichetta;
+  }
+}
+
+// Righe per il commercialista con valori "veri": numeri (→ celle numeriche in Excel)
+// e testi; '' = cella vuota. Le colonne di cassa (riporto, cassa fine giorno) mostrano
+// sempre il valore, anche 0; le altre restano vuote quando valgono 0.
+function generaRigheCommercialista(meseIdx, soloAnteprima) {
   const nomeMese = MESI[meseIdx].toUpperCase();
-  const sep = ';';
 
   const tuttiGiorni = CALENDARIO_2026[meseIdx] || [];
-  if (tuttiGiorni.length === 0) return '(Mese non disponibile)';
+  if (tuttiGiorni.length === 0) return {righe:[], grassetto:[], messaggio:'(Mese non disponibile)'};
 
   const haDati = tuttiGiorni.some(g => {
     const d = D[g.iso];
@@ -2165,45 +2234,44 @@ function generaCsvCommercialista(meseIdx, soloAnteprima) {
                  (d.versamenti||[]).some(v=>n(v.importo)>0) ||
                  (d.pagCont||[]).some(p=>n(p.importo)>0));
   });
-  if (!haDati) return '(Nessun dato inserito per questo mese)';
+  if (!haDati) return {righe:[], grassetto:[], messaggio:'(Nessun dato inserito per questo mese)'};
 
   const primoIso   = tuttiGiorni[0].iso;
   const riportoMese = riportoPrecedente(primoIso);
 
-  const r   = (v) => typeof v==='number' ? v.toFixed(2).replace('.',',') : '';
-  const rv  = (v) => (typeof v==='number' && v !== 0) ? v.toFixed(2).replace('.',',') : '';
-  const q   = (v) => (v===''||v===null||v===undefined) ? '' : `"${String(v).replace(/"/g,'""')}"`;
+  const nz = (v) => (typeof v==='number' && v !== 0) ? v : '';
   const isoToIt = (iso) => { const p=(iso||'').split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:''; };
 
-  const righe = [];
+  const righe = [], grassetto = [];
 
   // ── Intestazione ──────────────────────────────────────────────
-  righe.push(q(`PRIMA NOTA DI CASSA — RISTORANTE PARIZZI — ${nomeMese} 2026`));
-  righe.push('');
-  righe.push([q('Cassa riportata da mese precedente'), '', r(riportoMese)].join(sep));
-  righe.push('');
+  grassetto.push(righe.length);
+  righe.push([`PRIMA NOTA DI CASSA — RISTORANTE PARIZZI — ${nomeMese} 2026`]);
+  righe.push([]);
+  righe.push(['Cassa riportata da mese precedente', '', riportoMese]);
+  righe.push([]);
 
   // ── Header colonne ────────────────────────────────────────────
-  // Colonne: DATA | GG | CHIUSURA DI CASSA | POS | SOSPESI | ALTRI |
+  // Colonne: DATA | GG | CHIUSURA DI CASSA | CARTE | SOSPESI | ALTRI |
   //          TOT. NON CONTANTI | CONTANTI GIORNO | VERSAMENTO BANCA |
-  //          PAG. CONTANTI | CASSA FINE GIORNO |
+  //          CASSA FINE GIORNO |
   //          RIENTRO — DESCRIZIONE | RIENTRO — DATA | RIENTRO — IMPORTO | NOTE
+  grassetto.push(righe.length);
   righe.push([
-    q('DATA'), q('GG'),
-    q('CHIUSURA DI CASSA'),
-    q('CARTE DI CREDITO'), q('SOSPESI'), q('ALTRI'),
-    q('TOT. NON CONTANTI'),
-    q('CONTANTI GIORNO'),
-    q('VERSAMENTO BANCA'),
-    q('PAG. CONTANTI'),
-    q('CASSA FINE GIORNO'),
-    q('RIENTRO — DESCRIZIONE'), q('RIENTRO — DATA'), q('RIENTRO — IMPORTO'),
-    q('NOTE')
-  ].join(sep));
+    'DATA', 'GG',
+    'CHIUSURA DI CASSA',
+    'CARTE DI CREDITO', 'SOSPESI', 'ALTRI',
+    'TOT. NON CONTANTI',
+    'CONTANTI GIORNO',
+    'VERSAMENTO BANCA',
+    'CASSA FINE GIORNO',
+    'RIENTRO — DESCRIZIONE', 'RIENTRO — DATA', 'RIENTRO — IMPORTO',
+    'NOTE'
+  ]);
 
   // ── Righe giornaliere ─────────────────────────────────────────
   let tLordo=0, tPos=0, tSos=0, tAlt=0,
-      tStorni=0, tContG=0, tVers=0, tPagC=0;
+      tStorni=0, tContG=0, tVers=0;
 
   const limite = soloAnteprima ? Math.min(7, tuttiGiorni.length) : tuttiGiorni.length;
 
@@ -2227,11 +2295,11 @@ function generaCsvCommercialista(meseIdx, soloAnteprima) {
     if (!haMovimento) {
       const cassaInvariata = riportoPrecedente(g.iso);
       righe.push([
-        q(dataFmt), q(g.wd),
-        '', '', '', '', '', '', '', '', r(cassaInvariata),
-        q(rientroDesc), q(rientroData), rv(rientroImporto)||'',
+        dataFmt, g.wd,
+        '', '', '', '', '', '', '', cassaInvariata,
+        rientroDesc, rientroData, nz(rientroImporto),
         ''
-      ].join(sep));
+      ]);
       continue;
     }
 
@@ -2245,24 +2313,22 @@ function generaCsvCommercialista(meseIdx, soloAnteprima) {
     const sos  = sosLeg + sosGlob;
     const alt  = (d.bonifici||[]).concat(d.extra||[]).reduce((s,p)=>s+n(p.importo),0);
     const vers = c.totVers;
-    const pagc = c.totPagCont;
 
     righe.push([
-      q(dataFmt), q(g.wd),
-      rv(c.lordo),
-      rv(pos), rv(sos), rv(alt),
-      rv(c.totStorni),
-      rv(c.contGiorno),
-      rv(vers),
-      rv(pagc),
-      r(c.contFisici),
-      q(rientroDesc), q(rientroData), rv(rientroImporto)||'',
-      q(d.note||'')
-    ].join(sep));
+      dataFmt, g.wd,
+      nz(c.lordo),
+      nz(pos), nz(sos), nz(alt),
+      nz(c.totStorni),
+      nz(c.contGiorno),
+      nz(vers),
+      c.contFisici,
+      rientroDesc, rientroData, nz(rientroImporto),
+      d.note||''
+    ]);
 
     tLordo+=c.lordo; tPos+=pos; tSos+=sos; tAlt+=alt;
     tStorni+=c.totStorni; tContG+=c.contGiorno;
-    tVers+=vers; tPagC+=pagc;
+    tVers+=vers;
   }
 
   if (!soloAnteprima) {
@@ -2272,19 +2338,28 @@ function generaCsvCommercialista(meseIdx, soloAnteprima) {
       ? calcG(ultConDati.iso, riportoPrecedente(ultConDati.iso)).contFisici
       : riportoMese;
 
-    righe.push('');
+    righe.push([]);
+    grassetto.push(righe.length);
     righe.push([
-      q('TOTALE MESE'), q(''),
-      rv(tLordo), rv(tPos), rv(tSos), rv(tAlt),
-      rv(tStorni), rv(tContG), rv(tVers), rv(tPagC),
-      r(cassaFine), q(''), q(''), q(''), q('')
-    ].join(sep));
-    righe.push('');
-    righe.push(q('Cifre in Euro (€) — separatore decimale: virgola — Prima Nota 2026 Ristorante Parizzi'));
-    return righe.join('\r\n');
+      'TOTALE MESE', '',
+      nz(tLordo), nz(tPos), nz(tSos), nz(tAlt),
+      nz(tStorni), nz(tContG), nz(tVers),
+      cassaFine, '', '', '', ''
+    ]);
+    righe.push([]);
+    righe.push(['Cifre in Euro (€) — Prima Nota 2026 Ristorante Parizzi']);
   }
 
-  return righe.join('\n');
+  return {righe, grassetto};
+}
+
+// Anteprima testuale nel modale: stesse righe, in forma CSV (punto e virgola)
+function generaCsvCommercialista(meseIdx, soloAnteprima) {
+  const {righe, messaggio} = generaRigheCommercialista(meseIdx, soloAnteprima);
+  if (messaggio) return messaggio;
+  const cella = (v) => typeof v==='number' ? v.toFixed(2).replace('.',',')
+                     : (v===''||v===null||v===undefined) ? '' : `"${String(v).replace(/"/g,'""')}"`;
+  return righe.map(r => r.map(cella).join(';')).join(soloAnteprima ? '\n' : '\r\n');
 }
 
 // ══════════════════════════════════════════════════

@@ -13,7 +13,11 @@ import threading
 import datetime
 import subprocess
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify
+import io
+import tempfile
+import zipfile
+from xml.sax.saxutils import escape as _xml_escape
+from flask import Flask, render_template, request, jsonify, Response
 
 app = Flask(__name__)
 
@@ -196,6 +200,211 @@ def prima_nota_backup():
     except Exception as e:
         return jsonify({'ok': False, 'errore': str(e)}), 500
     return jsonify({'ok': True, 'file': dest.name, 'percorso': str(dest)})
+
+
+def _xlsx_colonna(i):
+    """0 → A, 25 → Z, 26 → AA."""
+    s = ''
+    i += 1
+    while i:
+        i, r = divmod(i - 1, 26)
+        s = chr(65 + r) + s
+    return s
+
+
+def _crea_xlsx(righe, nome_foglio, grassetto=(), larghezze=()):
+    """Costruisce un vero file Excel (.xlsx) con la sola libreria standard:
+    un .xlsx è uno zip di file XML. Celle numeriche = numeri veri (formato
+    #.##0,00), testi = stringhe; le righe in `grassetto` sono in neretto.
+    Niente dipendenze: funziona uguale su madre e figlie."""
+    grassetto = set(grassetto or ())
+    nome_foglio = ''.join(ch for ch in (nome_foglio or 'Prima nota') if ch not in '[]:*?/\\')[:31] or 'Prima nota'
+    xml_righe = []
+    for ri, riga in enumerate(righe or []):
+        bold = ri in grassetto
+        celle = []
+        for ci, v in enumerate(riga or []):
+            if v is None or v == '' or isinstance(v, bool):
+                continue
+            ref = f'{_xlsx_colonna(ci)}{ri + 1}'
+            if isinstance(v, (int, float)):
+                celle.append(f'<c r="{ref}" s="{3 if bold else 2}"><v>{float(v):.2f}</v></c>')
+            else:
+                testo = _xml_escape(str(v))
+                celle.append(f'<c r="{ref}" t="inlineStr" s="{1 if bold else 0}"><is><t xml:space="preserve">{testo}</t></is></c>')
+        xml_righe.append(f'<row r="{ri + 1}">{"".join(celle)}</row>')
+    cols = ''
+    if larghezze:
+        cols = '<cols>' + ''.join(
+            f'<col min="{i + 1}" max="{i + 1}" width="{float(w):.1f}" customWidth="1"/>'
+            for i, w in enumerate(larghezze) if w) + '</cols>'
+    sheet = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+             '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+             f'{cols}<sheetData>{"".join(xml_righe)}</sheetData></worksheet>')
+    styles = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+              '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+              '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>'
+              '<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+              '<fills count="2"><fill><patternFill patternType="none"/></fill>'
+              '<fill><patternFill patternType="gray125"/></fill></fills>'
+              '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+              '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+              '<cellXfs count="4">'
+              '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+              '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+              '<xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+              '<xf numFmtId="4" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/>'
+              '</cellXfs>'
+              '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+              '</styleSheet>')
+    workbook = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+                'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                f'<sheets><sheet name="{_xml_escape(nome_foglio)}" sheetId="1" r:id="rId1"/></sheets></workbook>')
+    wb_rels = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+               '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+               '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+               '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+               '</Relationships>')
+    root_rels = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                 '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                 '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+                 '</Relationships>')
+    content_types = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                     '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                     '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                     '<Default Extension="xml" ContentType="application/xml"/>'
+                     '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                     '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                     '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+                     '</Types>')
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('[Content_Types].xml', content_types)
+        z.writestr('_rels/.rels', root_rels)
+        z.writestr('xl/workbook.xml', workbook)
+        z.writestr('xl/_rels/workbook.xml.rels', wb_rels)
+        z.writestr('xl/styles.xml', styles)
+        z.writestr('xl/worksheets/sheet1.xml', sheet)
+    return buf.getvalue()
+
+
+@app.route('/api/prima-nota/export/xlsx', methods=['POST'])
+def prima_nota_export_xlsx():
+    """Riceve dal browser le righe già calcolate (numeri e testi) e restituisce
+    il file Excel da scaricare (export per il commercialista)."""
+    p = request.get_json(force=True, silent=True) or {}
+    righe = p.get('righe')
+    if not isinstance(righe, list) or not righe:
+        return jsonify({'ok': False, 'errore': 'Nessuna riga da esportare'}), 400
+    nome_file = str(p.get('file') or 'prima_nota.xlsx')
+    nome_file = ''.join(ch for ch in nome_file if ch.isalnum() or ch in '._-') or 'prima_nota.xlsx'
+    if not nome_file.lower().endswith('.xlsx'):
+        nome_file += '.xlsx'
+    try:
+        dati = _crea_xlsx(righe, p.get('foglio'), p.get('grassetto') or (), p.get('larghezze') or ())
+    except Exception as e:
+        return jsonify({'ok': False, 'errore': str(e)}), 500
+    return Response(dati,
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    headers={'Content-Disposition': f'attachment; filename="{nome_file}"',
+                             'Cache-Control': 'no-store'})
+
+
+# ── E-mail al commercialista (Marco, 9/09/2026) ─────────────────────────
+# Oggetto "Prima nota ristorante <mese>" dalla postazione madre (ristorante),
+# "Prima nota suite <mese>" dalle figlie (suite). Un file `sede.txt` nella
+# cartella dati (contenuto: ristorante | suite) può forzare la sede.
+DESTINATARIO_COMMERCIALISTA = 'mara@bianchipizzetti.it'
+MITTENTE_PER_SEDE = {'ristorante': 'info@ristoranteparizzi.it', 'suite': 'info@parizzisuite.com'}
+SEDE_FILE  = DATA_DIR / 'sede.txt'
+EXPORT_DIR = DATA_DIR / 'esportazioni'   # gli Excel allegati alle e-mail restano qui
+
+# Mail deve trovare l'allegato anche dopo: per questo il file resta in EXPORT_DIR.
+_APPLESCRIPT_MAIL = '''on run argv
+  set oggetto to item 1 of argv
+  set corpo to item 2 of argv
+  set destinatario to item 3 of argv
+  set percorsoFile to item 4 of argv
+  set mittenteVoluto to item 5 of argv
+  tell application "Mail"
+    set mittente to ""
+    try
+      repeat with acc in accounts
+        if mittenteVoluto is in (email addresses of acc) then set mittente to mittenteVoluto
+      end repeat
+    end try
+    set nuovoMsg to make new outgoing message with properties {subject:oggetto, content:corpo, visible:true}
+    if mittente is not "" then set sender of nuovoMsg to mittente
+    tell nuovoMsg
+      make new to recipient at end of to recipients with properties {address:destinatario}
+    end tell
+    delay 1
+    tell nuovoMsg
+      make new attachment with properties {file name:POSIX file percorsoFile} at after the last paragraph
+    end tell
+    activate
+  end tell
+  return "ok"
+end run
+'''
+
+
+def _sede():
+    try:
+        if SEDE_FILE.exists():
+            s = SEDE_FILE.read_text(encoding='utf-8').strip().lower()
+            if s in MITTENTE_PER_SEDE:
+                return s
+    except Exception:
+        pass
+    return 'ristorante' if MARCATORE_MADRE.exists() else 'suite'
+
+
+@app.route('/api/prima-nota/export/email', methods=['POST'])
+def prima_nota_export_email():
+    """Crea l'Excel del mese, lo salva in `esportazioni/` e apre in Mail una
+    nuova e-mail per il commercialista con destinatario, oggetto e allegato
+    già pronti. NON spedisce: il tasto Invia lo preme Marco."""
+    p = request.get_json(force=True, silent=True) or {}
+    righe = p.get('righe')
+    if not isinstance(righe, list) or not righe:
+        return jsonify({'ok': False, 'errore': 'Nessuna riga da esportare'}), 400
+    mese = ''.join(ch for ch in str(p.get('mese') or '') if ch.isalpha()) or 'mese'
+    sede = _sede()
+    oggetto = f'Prima nota {sede} {mese} 2026'
+    dest = EXPORT_DIR / f'prima_nota_{sede}_{mese.lower()}_2026.xlsx'
+    try:
+        EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(_crea_xlsx(righe, f'{mese} 2026', p.get('grassetto') or (), p.get('larghezze') or ()))
+    except Exception as e:
+        return jsonify({'ok': False, 'errore': f'File Excel non creato: {e}'}), 500
+    corpo = (f'Buongiorno,\n\nin allegato la prima nota di cassa ({sede}) di {mese} 2026.\n\n'
+             'Cordiali saluti,\nMarco Parizzi\n')
+    script = None
+    try:
+        with tempfile.NamedTemporaryFile('w', suffix='.applescript', delete=False, encoding='utf-8') as t:
+            t.write(_APPLESCRIPT_MAIL)
+            script = t.name
+        r = subprocess.run(['osascript', script, oggetto, corpo, DESTINATARIO_COMMERCIALISTA,
+                            str(dest), MITTENTE_PER_SEDE.get(sede, '')],
+                           capture_output=True, text=True, timeout=90)
+    except Exception as e:
+        return jsonify({'ok': False, 'errore': f'Mail non raggiungibile: {e}', 'file': str(dest)}), 500
+    finally:
+        if script:
+            try:
+                os.unlink(script)
+            except Exception:
+                pass
+    print(f'[email commercialista] osascript rc={r.returncode} out={r.stdout.strip()!r} err={r.stderr.strip()!r}', flush=True)
+    if r.returncode != 0:
+        msg = (r.stderr or r.stdout).strip()[:300] or 'osascript fallito'
+        if '-1743' in msg or 'Not authorized' in msg or 'non autorizzat' in msg.lower():
+            msg += ' — consenti a Prima Nota (python3) di controllare Mail: Impostazioni di Sistema → Privacy e sicurezza → Automazione'
+        return jsonify({'ok': False, 'errore': msg, 'file': str(dest)}), 500
+    return jsonify({'ok': True, 'file': str(dest), 'oggetto': oggetto,
+                    'a': DESTINATARIO_COMMERCIALISTA, 'sede': sede})
 
 
 @app.route('/api/prima-nota/consigli', methods=['GET'])
