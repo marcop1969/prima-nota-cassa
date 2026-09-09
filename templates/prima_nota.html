@@ -453,7 +453,7 @@ html { font-variant-numeric: tabular-nums; } /* cifre a larghezza fissa: le colo
   <div class="kpi-cell"><div class="kpi-label">Incasso lordo</div><div class="kpi-val kv-blu" id="k1">—</div></div>
   <div class="kpi-cell"><div class="kpi-label">Versamenti in banca</div><div class="kpi-val kv-rosso" id="k2">—</div></div>
   <div class="kpi-cell"><div class="kpi-label">Pagamenti contanti</div><div class="kpi-val kv-rosso" id="k3">—</div></div>
-  <div class="kpi-cell"><div class="kpi-label">Contanti fisici</div><div class="kpi-val" id="k4">—</div></div>
+  <div class="kpi-cell"><div class="kpi-label">Contanti in cassa</div><div class="kpi-val" id="k4">—</div></div>
 </div>
 
 <div id="viewM" style="display:flex;">
@@ -482,7 +482,7 @@ html { font-variant-numeric: tabular-nums; } /* cifre a larghezza fissa: le colo
         <th>Incasso lordo</th>
         <th>Storni digitali</th>
         <th>Versamenti</th>
-        <th>Contanti fisici</th>
+        <th>Cassa a fine mese</th>
       </tr></thead>
       <tbody id="riepBody"></tbody>
       <tfoot id="riepFoot"></tfoot>
@@ -1392,7 +1392,8 @@ function riportoPrecedente(iso) {
 }
 
 function totMese(m) {
-  return (CALENDARIO_2026[m]||[]).reduce((acc,g) => {
+  const giorni = CALENDARIO_2026[m]||[];
+  const t = giorni.reduce((acc,g) => {
     const c = calcG(g.iso);
     const hasData = c.lordo > 0;
     return {
@@ -1405,6 +1406,18 @@ function totMese(m) {
       hasDiff: acc.hasDiff || (hasData && Math.abs(c.diffInc) > 0.005)
     };
   }, {lordo:0,storni:0,pagCont:0,vers:0,fisici:0,nGiorni:0,hasDiff:false});
+  // Cassa "in assoluto" a fine mese (riporto compreso, Marco 9/09/2026): contanti in
+  // cassa dell'ultimo giorno del mese che muove la cassa; se nessuno, il riporto
+  // con cui il mese comincia. `fisici` resta il solo movimento netto del mese.
+  t.cassa = giorni.length ? riportoPrecedente(giorni[0].iso) : 0;
+  for (let i = giorni.length - 1; i >= 0; i--) {
+    const iso = giorni[i].iso, d = D[iso] || {}, c0 = calcG(iso, 0);
+    if (n(d.incassoLordo) > 0 || c0.totVers > 0 || c0.totPagCont > 0 || Math.abs(c0.contGiorno) > 0.005) {
+      t.cassa = calcG(iso, riportoPrecedente(iso)).contFisici;
+      break;
+    }
+  }
+  return t;
 }
 
 // ─── Formattazione ────────────────────────────────
@@ -1573,8 +1586,8 @@ function renderKpi() {
   document.getElementById('k2').textContent = t.vers>0 ? fmt(t.vers) : '—';
   document.getElementById('k3').textContent = t.pagCont>0 ? fmt(t.pagCont) : '—';
   const k4 = document.getElementById('k4');
-  k4.textContent = fmtS(t.fisici) + (t.hasDiff?' ⚠':'');
-  k4.className = 'kpi-val ' + (t.hasDiff ? 'kv-warn' : t.fisici>=0 ? 'kv-verde' : 'kv-rosso');
+  k4.textContent = fmtS(t.cassa) + (t.hasDiff?' ⚠':'');
+  k4.className = 'kpi-val ' + (t.hasDiff ? 'kv-warn' : t.cassa>=0 ? 'kv-verde' : 'kv-rosso');
 }
 
 // ─── Sidebar ─────────────────────────────────────
@@ -2034,13 +2047,15 @@ function delVoce(iso, cat, idx) {
 // RIEPILOGO
 // ══════════════════════════════════════════════════
 function renderRiepilogo() {
-  let totG = {lordo:0,storni:0,pagCont:0,vers:0,fisici:0,nGiorni:0};
+  let totG = {lordo:0,storni:0,pagCont:0,vers:0,nGiorni:0};
+  let cassaFineAnno = null;   // cassa dell'ultimo mese con dati (non una somma)
   const body = MESI.map((m,i) => {
     const t = totMese(i);
     totG.lordo+=t.lordo; totG.storni+=t.storni; totG.pagCont+=t.pagCont;
-    totG.vers+=t.vers; totG.fisici+=t.fisici; totG.nGiorni+=t.nGiorni;
+    totG.vers+=t.vers; totG.nGiorni+=t.nGiorni;
     const v = t.nGiorni===0;
-    const cF = !v&&t.fisici<0?'color:var(--rosso)':(!v?'color:var(--verde)':'');
+    if (!v) cassaFineAnno = t.cassa;
+    const cF = !v&&t.cassa<0?'color:var(--rosso)':(!v?'color:var(--verde)':'');
     const warn = !v&&t.hasDiff?' ⚠':'';
     return `<tr onclick="switchMeseRiep(${i})" style="${i===meseAt?'background:#eff6ff':''}">
       <td>${m}</td>
@@ -2048,17 +2063,18 @@ function renderRiepilogo() {
       <td style="color:var(--accent)">${v?'—':fmt(t.lordo)}</td>
       <td style="color:var(--rosso)">${!v&&t.storni>0?fmt(t.storni):'—'}</td>
       <td>${!v&&t.vers>0?fmt(t.vers):'—'}</td>
-      <td style="${cF};font-weight:bold">${v?'—':fmtS(t.fisici)+warn}</td>
+      <td style="${cF};font-weight:bold">${v?'—':fmtS(t.cassa)+warn}</td>
     </tr>`;
   }).join('');
-  const cFt = totG.fisici>=0?'color:var(--verde)':'color:var(--rosso)';
+  if (cassaFineAnno === null) cassaFineAnno = totMese(0).cassa;
+  const cFt = cassaFineAnno>=0?'color:var(--verde)':'color:var(--rosso)';
   document.getElementById('riepBody').innerHTML = body;
   document.getElementById('riepFoot').innerHTML = `<tr>
     <td>TOTALE ANNO</td><td>${totG.nGiorni}</td>
     <td style="color:var(--accent)">${fmt(totG.lordo,true)}</td>
     <td style="color:var(--rosso)">${fmt(totG.storni,true)}</td>
     <td>${fmt(totG.vers,true)}</td>
-    <td style="${cFt}">${fmtS(totG.fisici)}</td>
+    <td style="${cFt}" title="Cassa dell'ultimo mese con dati">${fmtS(cassaFineAnno)}</td>
   </tr>`;
 }
 function switchMeseRiep(i) { meseAt=i; isoAt=null; setVista('m'); renderAll(); }
