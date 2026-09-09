@@ -80,7 +80,7 @@ html { font-variant-numeric: tabular-nums; } /* cifre a larghezza fissa: le colo
 
 /* ─── KPI ─── */
 .kpi-bar {
-  display: grid; grid-template-columns: repeat(4,1fr);
+  display: grid; grid-template-columns: repeat(5,1fr);
   gap: 1px; background: var(--bordo); border-bottom: 1px solid var(--bordo);
 }
 .kpi-cell { background: white; padding: 9px 14px; }
@@ -451,6 +451,7 @@ html { font-variant-numeric: tabular-nums; } /* cifre a larghezza fissa: le colo
 <div class="kpi-bar">
   <div class="kpi-cell"><div class="kpi-label">Mese</div><div class="kpi-val kv-blu" id="k0">—</div></div>
   <div class="kpi-cell"><div class="kpi-label">Incasso lordo</div><div class="kpi-val kv-blu" id="k1">—</div></div>
+  <div class="kpi-cell"><div class="kpi-label">Versamenti in banca</div><div class="kpi-val kv-rosso" id="k2">—</div></div>
   <div class="kpi-cell"><div class="kpi-label">Pagamenti contanti</div><div class="kpi-val kv-rosso" id="k3">—</div></div>
   <div class="kpi-cell"><div class="kpi-label">Contanti fisici</div><div class="kpi-val" id="k4">—</div></div>
 </div>
@@ -1569,6 +1570,7 @@ function renderKpi() {
   const t = totMese(meseAt);
   document.getElementById('k0').textContent = MESI[meseAt];
   document.getElementById('k1').textContent = t.lordo>0 ? fmt(t.lordo) : '—';
+  document.getElementById('k2').textContent = t.vers>0 ? fmt(t.vers) : '—';
   document.getElementById('k3').textContent = t.pagCont>0 ? fmt(t.pagCont) : '—';
   const k4 = document.getElementById('k4');
   k4.textContent = fmtS(t.fisici) + (t.hasDiff?' ⚠':'');
