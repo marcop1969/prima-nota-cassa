@@ -634,6 +634,9 @@ const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
 //   fattAl:   string,                  ← fatture al n°
 //   fattNote: string,                  ← note sulle fatture (es. da spostare)
 //   fattImporto: number,               ← importo totale fatture
+//   ncImporto: number,                 ← nota di credito (toglie dal lordo)
+//   ncNum:    string,                  ← nota di credito n°
+//   ncNote:   string,                  ← note sulla nota di credito
 //   pos:      [{id, desc, importo}],   ← pagamenti POS
 //   bonifici: [{id, desc, importo}],   ← pagamenti bonifico
 //   sospesi:  [{id, desc, importo}],   ← sospesi
@@ -1286,7 +1289,8 @@ function calcG(iso, riporto) {
   // Sezione "Incasso del giorno": ricevute e fatture sono totali diretti (campi singoli).
   const totRic  = n(d.ricevuteImporto);
   const totFatt = n(d.fattImporto);
-  const diffInc = (totRic > 0 || totFatt > 0) ? (lordo - totRic - totFatt) : 0;
+  const totNC   = n(d.ncImporto);   // nota di credito: toglie dal lordo (Marco, 25/09/2026)
+  const diffInc = (totRic > 0 || totFatt > 0) ? (lordo - (totRic + totFatt - totNC)) : 0;
 
   // Storni digitali (tolgono dal lordo → contante giorno)
   const totPos  = (d.pos||[]).reduce((s,r)=>s+n(r.importo),0);
@@ -1822,6 +1826,25 @@ function renderDettaglio() {
         </div>
       </div>
 
+      <!-- ↩️ Nota di credito sotto le fatture (Marco, 25/09/2026): importo (toglie dal lordo), n° e note -->
+      <div class="g3" style="margin-bottom:9px;">
+        <div>
+          <span class="importo-sub-label">↩️ Nota di credito</span>
+          <input type="text" inputmode="decimal" class="importo-sub-field" style="color:var(--rosso);"
+            value="${fmtNum(d.ncImporto)}" placeholder="0,00"
+            onfocus="numFocus(this)" onblur="numBlur(this)"
+            oninput="updSubImporto('${iso}','ncImporto',parseFmt(this.value))">
+        </div>
+        <div class="fl"><label>Nota di credito n°</label>
+          <input type="text" value="${esc(d.ncNum||'')}" placeholder="es. 3"
+            onchange="updCampo('${iso}','ncNum',this.value)">
+        </div>
+        <div class="fl"><label>Note nota di credito</label>
+          <input type="text" value="${esc(d.ncNote||'')}" placeholder="es. storno fatt. 105"
+            onchange="updCampo('${iso}','ncNote',this.value)">
+        </div>
+      </div>
+
       <!-- 💳 Carte sotto "Fatture dal/al" (Marco, 8/09/2026): ricevute → fatture → numeri fattura → carte -->
       <div>
         <span class="importo-sub-label">💳 Carte di credito</span>
@@ -1966,6 +1989,7 @@ function ensureD(iso) {
   if (!D[iso]) D[iso]={
     note:'', ricevuta:'',
     fattDal:'', fattAl:'', fattNote:'', fattImporto:'',
+    ncImporto:'', ncNum:'', ncNote:'',
     ricevuteImporto:'',
     incassoLordo:'',
     ricevute:[],pos:[],bonifici:[],sospesi:[],extra:[],
@@ -2001,7 +2025,8 @@ function updCampo(iso, campo, val) {
 function updSubImporto(iso, campo, val) {
   ensureD(iso);
   D[iso][campo] = val;
-  D[iso].incassoLordo = (parseFloat(D[iso].ricevuteImporto)||0) + (parseFloat(D[iso].fattImporto)||0);
+  D[iso].incassoLordo = (parseFloat(D[iso].ricevuteImporto)||0) + (parseFloat(D[iso].fattImporto)||0)
+                      - (parseFloat(D[iso].ncImporto)||0);
   _invalidaCache();
   renderKpi(); renderSidebar();
   refreshCalcCard(iso);
