@@ -637,7 +637,7 @@ const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
 //   ncImporto: number,                 ← nota di credito (toglie dal lordo)
 //   ncNum:    string,                  ← nota di credito n°
 //   ncNote:   string,                  ← note sulla nota di credito (campo vecchio, non più a video)
-//   ncStorna: string,                  ← quale fattura storna: id di un sospeso | 'altra' | '' (mai effetto su incasso o cassa)
+//   ncStorna: string,                  ← quale fattura storna, testo libero (mai effetto su incasso o cassa)
 //   pos:      [{id, desc, importo}],   ← pagamenti POS
 //   bonifici: [{id, desc, importo}],   ← pagamenti bonifico
 //   sospesi:  [{id, desc, importo}],   ← sospesi
@@ -1842,19 +1842,9 @@ function renderDettaglio() {
               onchange="updCampo('${iso}','ncNum',this.value)">
           </div>
           <div class="fl"><label>Storna la fattura</label>
-            ${(()=>{
-              const sel = d.ncStorna || '';
-              const manca = n(d.ncImporto) > 0 && !sel;
-              const lista = getSospesoGlobali()
-                .filter(s => !s.rientro || s.rientro.parziale || s.id === sel)
-                .sort((a,b) => a.dataApertura < b.dataApertura ? -1 : 1);
-              return `<select class="pag-metodo" style="width:100%;${manca?'border-color:#dc2626;background:#fef2f2;':''}"
-                onchange="updNcStorna('${iso}',this.value)">
-                <option value=""${sel===''?' selected':''}>— quale fattura? —</option>
-                ${lista.map(s => `<option value="${s.id}"${sel===s.id?' selected':''}>${esc(s.desc)} — ${fmtData(s.dataApertura)} · ${fmt(s.importo)}</option>`).join('')}
-                <option value="altra"${sel==='altra'?' selected':''}>Altra fattura (non fra i sospesi)</option>
-              </select>`;
-            })()}
+            <input type="text" value="${esc(d.ncStorna||'')}" placeholder="es. fatt. 40 del 27/05, riemessa a…"
+              style="${n(d.ncImporto)>0 && !(d.ncStorna||'').trim() ? 'border-color:#dc2626;background:#fef2f2;' : ''}"
+              onchange="updCampo('${iso}','ncStorna',this.value)">
           </div>
         </div>
       </div>
@@ -2032,64 +2022,21 @@ function updPos(iso, val) {
 function updCampo(iso, campo, val) {
   ensureD(iso);
   D[iso][campo] = val;
-  if (campo === 'ncNum') _collegaNcSospeso(iso);
+  if (campo === 'ncStorna') renderDettaglio();   // toglie il rosso appena scritto
   _invalidaCache();
   renderKpi(); renderSidebar();
   refreshCalcCard(iso);
   scheduleSave();
 }
 
-// ── Nota di credito della scheda giorno (Marco, 25/09/2026): deve dire QUALE fattura storna ──
-// Marco: «non abbiamo incassato niente, non c'entra con i contanti» → la NC NON tocca MAI
-// né l'incasso lordo né la cassa. Serve a chiudere il sospeso e a finire nell'Excel.
-// id      → storna un sospeso: il sospeso si chiude (rientro 'nota_credito').
-// 'altra' → fattura non fra i sospesi: solo registrata (Excel).
-// ''      → non ancora scelto: la tendina resta rossa.
+// ── Nota di credito della scheda giorno (Marco, 25/09/2026) ──
+// «non abbiamo incassato niente, non c'entra con i contanti» → la NC NON tocca MAI né l'incasso
+// lordo né la cassa. «Non mi devi suggerire la fattura»: può stornare qualunque fattura, anche di
+// mesi prima e già pagata (es. riemessa con altra intestazione) → «Storna la fattura» è testo libero.
+// Serve solo al commercialista (Excel).
 function _ricalcolaLordo(iso) {
   const d = D[iso]; if (!d) return;
   d.incassoLordo = (parseFloat(d.ricevuteImporto)||0) + (parseFloat(d.fattImporto)||0);
-}
-
-function _scollegaNcSospeso(iso, sid) {
-  const s = getSospesoGlobali().find(x => x.id === sid);
-  if (s && s.rientro && s.rientro.metodo === 'nota_credito' && s.rientro.data === iso) s.rientro = null;
-  if (D[iso]?.rientriSospesi) D[iso].rientriSospesi = D[iso].rientriSospesi.filter(r => r.sospeso_id !== sid);
-}
-
-// Allinea il sospeso scelto alla NC del giorno (importo e n°). Se l'importo è 0, il sospeso si riapre.
-function _collegaNcSospeso(iso) {
-  const d = D[iso]; if (!d) return;
-  const sid = d.ncStorna;
-  if (!sid || sid === 'altra') return;
-  const s = getSospesoGlobali().find(x => x.id === sid);
-  if (!s) { d.ncStorna = ''; return; }
-  const importo = parseFloat(d.ncImporto) || 0;
-  if (importo <= 0) { _scollegaNcSospeso(iso, sid); d.ncStorna = ''; return; }
-  if (s.rientro?.data && s.rientro.data !== iso && D[s.rientro.data]?.rientriSospesi)
-    D[s.rientro.data].rientriSospesi = D[s.rientro.data].rientriSospesi.filter(r => r.sospeso_id !== sid);
-  const ncNum = (d.ncNum || '').trim();
-  s.rientro = { data: iso, importo, metodo: 'nota_credito', ncNum, parziale: Math.abs(importo - s.importo) > 0.005 };
-  d.rientriSospesi = (d.rientriSospesi || []).filter(r => r.sospeso_id !== sid);
-  d.rientriSospesi.push({ sospeso_id: sid, desc: s.desc, importo, metodo: 'nota_credito', ncNum, dataApertura: s.dataApertura });
-}
-
-function updNcStorna(iso, val) {
-  ensureD(iso);
-  const d = D[iso];
-  const prev = d.ncStorna || '';
-  if (prev && prev !== 'altra' && prev !== val) _scollegaNcSospeso(iso, prev);
-  d.ncStorna = val;
-  if (val && val !== 'altra') {
-    if (!(parseFloat(d.ncImporto) > 0)) { notif('⚠️ Metti prima l\'importo della nota di credito'); d.ncStorna = ''; renderDettaglio(); return; }
-    _collegaNcSospeso(iso);
-    const s = getSospesoGlobali().find(x => x.id === val);
-    if (s) notif(s.rientro?.parziale ? '⚠️ Importo diverso dal sospeso: resta aperto come parziale'
-                                     : '✅ Sospeso «' + s.desc + '» stornato con nota di credito');
-  }
-  _ricalcolaLordo(iso);
-  _invalidaCache();
-  salvaDati();
-  renderAll();
 }
 
 // Una volta sola, all'avvio: le NC inserite prima di questa regola prendono il collegamento giusto.
@@ -2101,15 +2048,11 @@ function _migraNotaCredito() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
     const d = D[iso];
     if (!d || !(parseFloat(d.ncImporto) > 0)) continue;
-    const prima = JSON.stringify([d.ncStorna, d.incassoLordo, d.ncNum]);
-    if (!d.ncStorna || d.ncStorna === 'oggi') {
-      const s = getSospesoGlobali().find(x => x.rientro && x.rientro.metodo === 'nota_credito' && x.rientro.data === iso);
-      d.ncStorna = s ? s.id : '';
-      if (s && !d.ncNum && s.rientro.ncNum) d.ncNum = s.rientro.ncNum;
-    }
-    _collegaNcSospeso(iso);
+    const prima = JSON.stringify([d.ncStorna, d.incassoLordo]);
+    if (d.ncStorna === 'oggi' || /^sp_/.test(d.ncStorna || '')) d.ncStorna = '';   // vecchie tendine
+    if (typeof d.ncStorna !== 'string') d.ncStorna = (d.ncNote || '');            // il vecchio campo note
     _ricalcolaLordo(iso);           // la NC non toglie mai dal lordo
-    if (JSON.stringify([d.ncStorna, d.incassoLordo, d.ncNum]) !== prima) cambiato = true;
+    if (JSON.stringify([d.ncStorna, d.incassoLordo]) !== prima) cambiato = true;
   }
   if (cambiato) { _invalidaCache(); scheduleSave(); }
 }
@@ -2117,7 +2060,6 @@ function _migraNotaCredito() {
 function updSubImporto(iso, campo, val) {
   ensureD(iso);
   D[iso][campo] = val;
-  if (campo === 'ncImporto') _collegaNcSospeso(iso);
   _ricalcolaLordo(iso);
   _invalidaCache();
   renderKpi(); renderSidebar();
@@ -2279,7 +2221,7 @@ function selezionaCommMese(idx, el) {
 }
 
 // Larghezze colonne Excel (14 colonne, nell'ordine dell'intestazione)
-const LARGHEZZE_COMM = [12, 5, 17, 16, 14, 16, 12, 12, 18, 17, 18, 18, 30, 13, 16, 32];
+const LARGHEZZE_COMM = [12, 5, 17, 16, 14, 34, 16, 12, 12, 18, 17, 18, 18, 30, 13, 16, 32];
 
 function _payloadCommercialista(idx) {
   const {righe, grassetto, messaggio} = generaRigheCommercialista(idx, false);
@@ -2385,7 +2327,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
   righe.push([]);
 
   // ── Header colonne ────────────────────────────────────────────
-  // Colonne: DATA | GG | CHIUSURA DI CASSA | NOTA DI CREDITO | N° NC | CARTE | SOSPESI | ALTRI |
+  // Colonne: DATA | GG | CHIUSURA DI CASSA | NOTA DI CREDITO | N° NC | STORNA LA FATTURA | CARTE | SOSPESI | ALTRI |
   //          TOT. NON CONTANTI | CONTANTI GIORNO | VERSAMENTO BANCA |
   //          CASSA FINE GIORNO |
   //          RIENTRO — DESCRIZIONE | RIENTRO — DATA | RIENTRO — IMPORTO | NOTE
@@ -2393,7 +2335,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
   righe.push([
     'DATA', 'GG',
     'CHIUSURA DI CASSA',
-    'NOTA DI CREDITO', 'NOTA DI CREDITO N°',
+    'NOTA DI CREDITO', 'NOTA DI CREDITO N°', 'STORNA LA FATTURA',
     'CARTE DI CREDITO', 'SOSPESI', 'ALTRI',
     'TOT. NON CONTANTI',
     'CONTANTI GIORNO',
@@ -2425,9 +2367,11 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     // importo rientrato = solo soldi veri (le note di credito stanno nella loro colonna)
     const rientroImporto = rientriOggi.filter(s => s.rientro.metodo !== 'nota_credito')
                               .reduce((sum,s) => sum + n(s.rientro.importo), 0);
-    const ncAltri        = rientriNC.filter(s => s.id !== d?.ncStorna);   // la NC della scheda giorno è già contata
-    const ncGiorno       = n(d?.ncImporto) + ncAltri.reduce((sum,s) => sum + n(s.rientro.importo), 0);
-    const ncNumeri       = [d?.ncNum, ...ncAltri.map(s => s.rientro.ncNum)].filter(Boolean).join(', ');
+    // Colonne NOTA DI CREDITO: solo la nota scritta nella scheda giorno (un sospeso chiuso con NC
+    // dalla vecchia tendina è la stessa nota: non si conta due volte, resta nella descrizione del rientro).
+    const ncGiorno       = n(d?.ncImporto);
+    const ncNumeri       = d?.ncNum || '';
+    const ncStorna       = (d?.ncStorna || '').trim();
 
     const haMovimento = d && (n(d.incassoLordo)>0 || n(d.ncImporto)>0 ||
                               (d.versamenti||[]).some(v=>n(v.importo)>0) ||
@@ -2437,7 +2381,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
       const cassaInvariata = riportoPrecedente(g.iso);
       righe.push([
         dataFmt, g.wd,
-        '', nz(ncGiorno), ncNumeri, '', '', '', '', '', '', cassaInvariata,
+        '', nz(ncGiorno), ncNumeri, ncStorna, '', '', '', '', '', '', cassaInvariata,
         rientroDesc, rientroData, nz(rientroImporto),
         ''
       ]);
@@ -2459,7 +2403,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     righe.push([
       dataFmt, g.wd,
       nz(c.lordo),
-      nz(ncGiorno), ncNumeri,
+      nz(ncGiorno), ncNumeri, ncStorna,
       nz(pos), nz(sos), nz(alt),
       nz(c.totStorni),
       nz(c.contGiorno),
@@ -2485,7 +2429,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     grassetto.push(righe.length);
     righe.push([
       'TOTALE MESE', '',
-      nz(tLordo), nz(tNC), '', nz(tPos), nz(tSos), nz(tAlt),
+      nz(tLordo), nz(tNC), '', '', nz(tPos), nz(tSos), nz(tAlt),
       nz(tStorni), nz(tContG), nz(tVers),
       cassaFine, '', '', '', ''
     ]);
@@ -2652,14 +2596,6 @@ function apriFormRientro(sid) {
   if (el) { el.style.display = 'block'; el.querySelector('input[type="date"]').focus(); }
 }
 
-// Nota di credito (Marco, 25/09/2026): chiude il sospeso senza soldi in cassa, con numero e importo.
-function cambiaMetodoRientro(sid) {
-  const nc = document.getElementById('spm-'+sid)?.value === 'nota_credito';
-  const w = document.getElementById('spnw-'+sid); if (w) w.style.display = nc ? 'block' : 'none';
-  const l = document.getElementById('spl-'+sid); if (l) l.textContent = nc ? 'Importo nota di credito' : 'Importo ricevuto';
-  if (nc) document.getElementById('spn-'+sid)?.focus();
-}
-
 function confermRientro(sid) {
   const dataEl   = document.getElementById('spd-'+sid);
   const impEl    = document.getElementById('spi-'+sid);
@@ -2728,7 +2664,6 @@ function eliminaRientro(sid, iso) {
   });
   // Riapri il sospeso collegato
   if (s) s.rientro = null;
-  giorni.forEach(g => { if (D[g] && D[g].ncStorna === sid) D[g].ncStorna = ''; });
   _invalidaCache();
   salvaDati();
   renderAll();
