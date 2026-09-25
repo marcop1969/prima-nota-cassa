@@ -636,7 +636,8 @@ const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
 //   fattImporto: number,               ← importo totale fatture
 //   ncImporto: number,                 ← nota di credito (toglie dal lordo)
 //   ncNum:    string,                  ← nota di credito n°
-//   ncNote:   string,                  ← note sulla nota di credito
+//   ncNote:   string,                  ← note sulla nota di credito (campo vecchio, non più a video)
+//   ncStorna: string,                  ← quale fattura storna: 'oggi' (toglie dal lordo) | id di un sospeso | ''
 //   pos:      [{id, desc, importo}],   ← pagamenti POS
 //   bonifici: [{id, desc, importo}],   ← pagamenti bonifico
 //   sospesi:  [{id, desc, importo}],   ← sospesi
@@ -1569,6 +1570,7 @@ function rispondiConsiglioModifica(id) {
 }
 
 function renderAll() {
+  _migraNotaCredito();
   renderMesi(); renderKpi(); renderSidebar(); renderDettaglio(); renderSospesoPanel();
 }
 
@@ -1840,9 +1842,20 @@ function renderDettaglio() {
             <input type="text" value="${esc(d.ncNum||'')}" placeholder="es. 3"
               onchange="updCampo('${iso}','ncNum',this.value)">
           </div>
-          <div class="fl"><label>Note nota di credito</label>
-            <input type="text" value="${esc(d.ncNote||'')}" placeholder="es. storno fatt. 105"
-              onchange="updCampo('${iso}','ncNote',this.value)">
+          <div class="fl"><label>Storna la fattura</label>
+            ${(()=>{
+              const sel = d.ncStorna || '';
+              const manca = n(d.ncImporto) > 0 && !sel;
+              const lista = getSospesoGlobali()
+                .filter(s => !s.rientro || s.rientro.parziale || s.id === sel)
+                .sort((a,b) => a.dataApertura < b.dataApertura ? -1 : 1);
+              return `<select class="pag-metodo" style="width:100%;${manca?'border-color:#dc2626;background:#fef2f2;':''}"
+                onchange="updNcStorna('${iso}',this.value)">
+                <option value=""${sel===''?' selected':''}>— quale fattura? —</option>
+                <option value="oggi"${sel==='oggi'?' selected':''}>Fattura di oggi (toglie dal lordo)</option>
+                ${lista.map(s => `<option value="${s.id}"${sel===s.id?' selected':''}>${esc(s.desc)} — ${fmtData(s.dataApertura)} · ${fmt(s.importo)}</option>`).join('')}
+              </select>`;
+            })()}
           </div>
         </div>
       </div>
@@ -1922,7 +1935,7 @@ function renderDettaglio() {
           ${rPos.map(r=>riga(r,'#fffbeb','#b45309','CARTE →','#b45309','+')).join('')}
           ${rCont.map(r=>riga(r,'#f0fdf4','#15803d','CONT. +','#15803d','+')).join('')}
           ${rBon.map(r=>riga(r,'#f0f9ff','#0369a1','BON.','#0369a1','')).join('')}
-          ${rNC.map(r=>riga({...r, desc: r.desc + (r.ncNum ? ' — nota di credito n° ' + r.ncNum : '')},'#fef2f2','#b91c1c','NOTA CR.','#b91c1c','')).join('')}
+          ${rNC.map(r=>riga({...r, desc: r.desc + ' — stornata con nota di credito' + (r.ncNum ? ' n° ' + r.ncNum : '')},'#fef2f2','#b91c1c','STORNO','#b91c1c','')).join('')}
         </div>`;
       })()}
 
@@ -1993,7 +2006,7 @@ function ensureD(iso) {
   if (!D[iso]) D[iso]={
     note:'', ricevuta:'',
     fattDal:'', fattAl:'', fattNote:'', fattImporto:'',
-    ncImporto:'', ncNum:'', ncNote:'',
+    ncImporto:'', ncNum:'', ncNote:'', ncStorna:'',
     ricevuteImporto:'',
     incassoLordo:'',
     ricevute:[],pos:[],bonifici:[],sospesi:[],extra:[],
@@ -2020,17 +2033,89 @@ function updPos(iso, val) {
 function updCampo(iso, campo, val) {
   ensureD(iso);
   D[iso][campo] = val;
+  if (campo === 'ncNum') _collegaNcSospeso(iso);
   _invalidaCache();
   renderKpi(); renderSidebar();
   refreshCalcCard(iso);
   scheduleSave();
 }
 
+// ── Nota di credito della scheda giorno (Marco, 25/09/2026): deve dire QUALE fattura storna ──
+// 'oggi'  → storna una fattura di oggi: toglie dal lordo del giorno.
+// id      → storna un sospeso: il sospeso si chiude (rientro 'nota_credito'), la cassa non si tocca.
+// ''      → non ancora scelto: nessun effetto sul lordo, la casella resta rossa.
+function _ricalcolaLordo(iso) {
+  const d = D[iso]; if (!d) return;
+  const nc = d.ncStorna === 'oggi' ? (parseFloat(d.ncImporto)||0) : 0;
+  d.incassoLordo = (parseFloat(d.ricevuteImporto)||0) + (parseFloat(d.fattImporto)||0) - nc;
+}
+
+function _scollegaNcSospeso(iso, sid) {
+  const s = getSospesoGlobali().find(x => x.id === sid);
+  if (s && s.rientro && s.rientro.metodo === 'nota_credito' && s.rientro.data === iso) s.rientro = null;
+  if (D[iso]?.rientriSospesi) D[iso].rientriSospesi = D[iso].rientriSospesi.filter(r => r.sospeso_id !== sid);
+}
+
+// Allinea il sospeso scelto alla NC del giorno (importo e n°). Se l'importo è 0, il sospeso si riapre.
+function _collegaNcSospeso(iso) {
+  const d = D[iso]; if (!d) return;
+  const sid = d.ncStorna;
+  if (!sid || sid === 'oggi') return;
+  const s = getSospesoGlobali().find(x => x.id === sid);
+  if (!s) { d.ncStorna = ''; return; }
+  const importo = parseFloat(d.ncImporto) || 0;
+  if (importo <= 0) { _scollegaNcSospeso(iso, sid); d.ncStorna = ''; return; }
+  if (s.rientro?.data && s.rientro.data !== iso && D[s.rientro.data]?.rientriSospesi)
+    D[s.rientro.data].rientriSospesi = D[s.rientro.data].rientriSospesi.filter(r => r.sospeso_id !== sid);
+  const ncNum = (d.ncNum || '').trim();
+  s.rientro = { data: iso, importo, metodo: 'nota_credito', ncNum, parziale: Math.abs(importo - s.importo) > 0.005 };
+  d.rientriSospesi = (d.rientriSospesi || []).filter(r => r.sospeso_id !== sid);
+  d.rientriSospesi.push({ sospeso_id: sid, desc: s.desc, importo, metodo: 'nota_credito', ncNum, dataApertura: s.dataApertura });
+}
+
+function updNcStorna(iso, val) {
+  ensureD(iso);
+  const d = D[iso];
+  const prev = d.ncStorna || '';
+  if (prev && prev !== 'oggi' && prev !== val) _scollegaNcSospeso(iso, prev);
+  d.ncStorna = val;
+  if (val && val !== 'oggi') {
+    if (!(parseFloat(d.ncImporto) > 0)) { notif('⚠️ Metti prima l\'importo della nota di credito'); d.ncStorna = ''; renderDettaglio(); return; }
+    _collegaNcSospeso(iso);
+    const s = getSospesoGlobali().find(x => x.id === val);
+    if (s) notif(s.rientro?.parziale ? '⚠️ Importo diverso dal sospeso: resta aperto come parziale'
+                                     : '✅ Sospeso «' + s.desc + '» stornato con nota di credito');
+  }
+  _ricalcolaLordo(iso);
+  _invalidaCache();
+  salvaDati();
+  renderAll();
+}
+
+// Una volta sola, all'avvio: le NC inserite prima di questa regola prendono il collegamento giusto.
+let _ncMigrato = false;
+function _migraNotaCredito() {
+  if (_ncMigrato) return; _ncMigrato = true;
+  let cambiato = false;
+  for (const iso of Object.keys(D)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
+    const d = D[iso];
+    if (!d || d.ncStorna !== undefined || !(parseFloat(d.ncImporto) > 0)) continue;
+    const s = getSospesoGlobali().find(x => x.rientro && x.rientro.metodo === 'nota_credito' && x.rientro.data === iso);
+    d.ncStorna = s ? s.id : 'oggi';
+    if (s && !d.ncNum && s.rientro.ncNum) d.ncNum = s.rientro.ncNum;
+    _collegaNcSospeso(iso);
+    _ricalcolaLordo(iso);
+    cambiato = true;
+  }
+  if (cambiato) { _invalidaCache(); scheduleSave(); }
+}
+
 function updSubImporto(iso, campo, val) {
   ensureD(iso);
   D[iso][campo] = val;
-  D[iso].incassoLordo = (parseFloat(D[iso].ricevuteImporto)||0) + (parseFloat(D[iso].fattImporto)||0)
-                      - (parseFloat(D[iso].ncImporto)||0);
+  if (campo === 'ncImporto') _collegaNcSospeso(iso);
+  _ricalcolaLordo(iso);
   _invalidaCache();
   renderKpi(); renderSidebar();
   refreshCalcCard(iso);
@@ -2337,9 +2422,9 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     // importo rientrato = solo soldi veri (le note di credito stanno nella loro colonna)
     const rientroImporto = rientriOggi.filter(s => s.rientro.metodo !== 'nota_credito')
                               .reduce((sum,s) => sum + n(s.rientro.importo), 0);
-    const ncSospesi      = rientriNC.reduce((sum,s) => sum + n(s.rientro.importo), 0);
-    const ncGiorno       = n(d?.ncImporto) + ncSospesi;
-    const ncNumeri       = [d?.ncNum, ...rientriNC.map(s => s.rientro.ncNum)].filter(Boolean).join(', ');
+    const ncAltri        = rientriNC.filter(s => s.id !== d?.ncStorna);   // la NC della scheda giorno è già contata
+    const ncGiorno       = n(d?.ncImporto) + ncAltri.reduce((sum,s) => sum + n(s.rientro.importo), 0);
+    const ncNumeri       = [d?.ncNum, ...ncAltri.map(s => s.rientro.ncNum)].filter(Boolean).join(', ');
 
     const haMovimento = d && (n(d.incassoLordo)>0 || n(d.ncImporto)>0 ||
                               (d.versamenti||[]).some(v=>n(v.importo)>0) ||
@@ -2640,6 +2725,7 @@ function eliminaRientro(sid, iso) {
   });
   // Riapri il sospeso collegato
   if (s) s.rientro = null;
+  giorni.forEach(g => { if (D[g] && D[g].ncStorna === sid) D[g].ncStorna = ''; });
   _invalidaCache();
   salvaDati();
   renderAll();
@@ -2713,21 +2799,16 @@ function renderSospesoPanel() {
       <div class="sp-form" id="spf-${s.id}" style="display:none">
         <label class="sp-form-label">Data pagamento</label>
         <input type="date" id="spd-${s.id}" value="${s.rientro?.data||''}">
-        <label class="sp-form-label" id="spl-${s.id}">${s.rientro?.metodo==='nota_credito' ? 'Importo nota di credito' : 'Importo ricevuto'}</label>
+        <label class="sp-form-label" id="spl-${s.id}">Importo ricevuto</label>
         <input type="text" id="spi-${s.id}"
           value="${fmtNum(s.rientro?.importo ?? s.importo)}"
           onfocus="numFocus(this)" onblur="numBlur(this)" inputmode="decimal">
         <label class="sp-form-label">Metodo di pagamento</label>
-        <select id="spm-${s.id}" onchange="cambiaMetodoRientro('${s.id}')">
+        <select id="spm-${s.id}">
           <option value="bonifico"${s.rientro?.metodo==='bonifico'?' selected':''}>Bonifico</option>
           <option value="pos"${s.rientro?.metodo==='pos'?' selected':''}>Carte di credito</option>
           <option value="contanti"${s.rientro?.metodo==='contanti'?' selected':''}>Contante</option>
-          <option value="nota_credito"${s.rientro?.metodo==='nota_credito'?' selected':''}>Nota di credito</option>
         </select>
-        <div id="spnw-${s.id}" style="display:${s.rientro?.metodo==='nota_credito'?'block':'none'}">
-          <label class="sp-form-label">Nota di credito n°</label>
-          <input type="text" id="spn-${s.id}" value="${esc(s.rientro?.ncNum||'')}" placeholder="es. 3">
-        </div>
         <div class="sp-btn-row">
           <button class="sp-btn-ok" onclick="confermRientro('${s.id}')">Conferma</button>
           <button class="sp-btn-cancel" onclick="document.getElementById('spf-${s.id}').style.display='none'">✕</button>
