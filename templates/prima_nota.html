@@ -1903,6 +1903,7 @@ function renderDettaglio() {
         const rPos  = rientri.filter(r=>r.metodo==='pos');
         const rCont = rientri.filter(r=>r.metodo==='contanti');
         const rBon  = rientri.filter(r=>r.metodo==='bonifico');
+        const rNC   = rientri.filter(r=>r.metodo==='nota_credito');
         const totRP = rPos.reduce((s,r)=>s+n(r.importo),0);
         const totRC = rCont.reduce((s,r)=>s+n(r.importo),0);
         const totRB = rBon.reduce((s,r)=>s+n(r.importo),0);
@@ -1921,6 +1922,7 @@ function renderDettaglio() {
           ${rPos.map(r=>riga(r,'#fffbeb','#b45309','CARTE →','#b45309','+')).join('')}
           ${rCont.map(r=>riga(r,'#f0fdf4','#15803d','CONT. +','#15803d','+')).join('')}
           ${rBon.map(r=>riga(r,'#f0f9ff','#0369a1','BON.','#0369a1','')).join('')}
+          ${rNC.map(r=>riga({...r, desc: r.desc + (r.ncNum ? ' — nota di credito n° ' + r.ncNum : '')},'#fef2f2','#b91c1c','NOTA CR.','#b91c1c','')).join('')}
         </div>`;
       })()}
 
@@ -2328,9 +2330,16 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     // Rientri sospesi con data di pagamento = questo giorno
     const rientriOggi = (D['__sospesi__']||[])
       .filter(s => s.rientro && s.rientro.data === g.iso);
-    const rientroDesc    = rientriOggi.map(s => s.desc).join(' | ');
+    const rientriNC  = rientriOggi.filter(s => s.rientro.metodo === 'nota_credito');
+    const rientroDesc    = rientriOggi.map(s => s.rientro.metodo === 'nota_credito'
+                              ? `${s.desc} (chiuso con nota di credito n° ${s.rientro.ncNum||'?'})` : s.desc).join(' | ');
     const rientroData    = rientriOggi.length > 0 ? isoToIt(rientriOggi[0].rientro.data) : '';
-    const rientroImporto = rientriOggi.reduce((sum,s) => sum + n(s.rientro.importo), 0);
+    // importo rientrato = solo soldi veri (le note di credito stanno nella loro colonna)
+    const rientroImporto = rientriOggi.filter(s => s.rientro.metodo !== 'nota_credito')
+                              .reduce((sum,s) => sum + n(s.rientro.importo), 0);
+    const ncSospesi      = rientriNC.reduce((sum,s) => sum + n(s.rientro.importo), 0);
+    const ncGiorno       = n(d?.ncImporto) + ncSospesi;
+    const ncNumeri       = [d?.ncNum, ...rientriNC.map(s => s.rientro.ncNum)].filter(Boolean).join(', ');
 
     const haMovimento = d && (n(d.incassoLordo)>0 || n(d.ncImporto)>0 ||
                               (d.versamenti||[]).some(v=>n(v.importo)>0) ||
@@ -2340,10 +2349,11 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
       const cassaInvariata = riportoPrecedente(g.iso);
       righe.push([
         dataFmt, g.wd,
-        '', '', '', '', '', '', '', '', '', cassaInvariata,
+        '', nz(ncGiorno), ncNumeri, '', '', '', '', '', '', cassaInvariata,
         rientroDesc, rientroData, nz(rientroImporto),
         ''
       ]);
+      tNC += ncGiorno;
       continue;
     }
 
@@ -2361,7 +2371,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     righe.push([
       dataFmt, g.wd,
       nz(c.lordo),
-      nz(n(d.ncImporto)), d.ncNum||'',
+      nz(ncGiorno), ncNumeri,
       nz(pos), nz(sos), nz(alt),
       nz(c.totStorni),
       nz(c.contGiorno),
@@ -2371,7 +2381,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
       d.note||''
     ]);
 
-    tLordo+=c.lordo; tNC+=n(d.ncImporto); tPos+=pos; tSos+=sos; tAlt+=alt;
+    tLordo+=c.lordo; tNC+=ncGiorno; tPos+=pos; tSos+=sos; tAlt+=alt;
     tStorni+=c.totStorni; tContG+=c.contGiorno;
     tVers+=vers;
   }
@@ -2554,6 +2564,14 @@ function apriFormRientro(sid) {
   if (el) { el.style.display = 'block'; el.querySelector('input[type="date"]').focus(); }
 }
 
+// Nota di credito (Marco, 25/09/2026): chiude il sospeso senza soldi in cassa, con numero e importo.
+function cambiaMetodoRientro(sid) {
+  const nc = document.getElementById('spm-'+sid)?.value === 'nota_credito';
+  const w = document.getElementById('spnw-'+sid); if (w) w.style.display = nc ? 'block' : 'none';
+  const l = document.getElementById('spl-'+sid); if (l) l.textContent = nc ? 'Importo nota di credito' : 'Importo ricevuto';
+  if (nc) document.getElementById('spn-'+sid)?.focus();
+}
+
 function confermRientro(sid) {
   const dataEl   = document.getElementById('spd-'+sid);
   const impEl    = document.getElementById('spi-'+sid);
@@ -2561,10 +2579,12 @@ function confermRientro(sid) {
   const data     = dataEl?.value;
   const importo  = parseFmt(impEl?.value || '');
   const metodo   = metEl?.value;
+  const ncNum    = metodo === 'nota_credito' ? (document.getElementById('spn-'+sid)?.value || '').trim() : '';
 
   if (!data)    { notif('⚠️ Inserisci la data del pagamento'); return; }
-  if (!importo) { notif('⚠️ Inserisci l\'importo ricevuto');  return; }
+  if (!importo) { notif('⚠️ Inserisci l\'importo');  return; }
   if (!metodo)  { notif('⚠️ Seleziona il metodo di pagamento'); return; }
+  if (metodo === 'nota_credito' && !ncNum) { notif('⚠️ Inserisci il numero della nota di credito'); return; }
 
   const lista   = getSospesoGlobali();
   const sospeso = lista.find(s => s.id === sid);
@@ -2580,6 +2600,7 @@ function confermRientro(sid) {
 
   const match = Math.abs(importo - sospeso.importo) < 0.005;
   sospeso.rientro = { data, importo, metodo, parziale: !match };
+  if (ncNum) sospeso.rientro.ncNum = ncNum;
 
   // Aggiungi rientro al giorno target
   ensureD(data);
@@ -2589,6 +2610,7 @@ function confermRientro(sid) {
     desc:         sospeso.desc,
     importo,
     metodo,
+    ncNum,
     dataApertura: sospeso.dataApertura
   });
 
@@ -2599,7 +2621,9 @@ function confermRientro(sid) {
   if (!match) {
     notif('⚠️ Importo parziale: sospeso rimane aperto con segnalazione');
   } else {
-    notif('✅ Sospeso chiuso — rientro registrato il ' + fmtData(data));
+    notif(metodo === 'nota_credito'
+      ? '✅ Sospeso chiuso con nota di credito n° ' + ncNum + ' del ' + fmtData(data)
+      : '✅ Sospeso chiuso — rientro registrato il ' + fmtData(data));
   }
 }
 
@@ -2689,16 +2713,21 @@ function renderSospesoPanel() {
       <div class="sp-form" id="spf-${s.id}" style="display:none">
         <label class="sp-form-label">Data pagamento</label>
         <input type="date" id="spd-${s.id}" value="${s.rientro?.data||''}">
-        <label class="sp-form-label">Importo ricevuto</label>
+        <label class="sp-form-label" id="spl-${s.id}">${s.rientro?.metodo==='nota_credito' ? 'Importo nota di credito' : 'Importo ricevuto'}</label>
         <input type="text" id="spi-${s.id}"
           value="${fmtNum(s.rientro?.importo ?? s.importo)}"
           onfocus="numFocus(this)" onblur="numBlur(this)" inputmode="decimal">
         <label class="sp-form-label">Metodo di pagamento</label>
-        <select id="spm-${s.id}">
+        <select id="spm-${s.id}" onchange="cambiaMetodoRientro('${s.id}')">
           <option value="bonifico"${s.rientro?.metodo==='bonifico'?' selected':''}>Bonifico</option>
           <option value="pos"${s.rientro?.metodo==='pos'?' selected':''}>Carte di credito</option>
           <option value="contanti"${s.rientro?.metodo==='contanti'?' selected':''}>Contante</option>
+          <option value="nota_credito"${s.rientro?.metodo==='nota_credito'?' selected':''}>Nota di credito</option>
         </select>
+        <div id="spnw-${s.id}" style="display:${s.rientro?.metodo==='nota_credito'?'block':'none'}">
+          <label class="sp-form-label">Nota di credito n°</label>
+          <input type="text" id="spn-${s.id}" value="${esc(s.rientro?.ncNum||'')}" placeholder="es. 3">
+        </div>
         <div class="sp-btn-row">
           <button class="sp-btn-ok" onclick="confermRientro('${s.id}')">Conferma</button>
           <button class="sp-btn-cancel" onclick="document.getElementById('spf-${s.id}').style.display='none'">✕</button>
