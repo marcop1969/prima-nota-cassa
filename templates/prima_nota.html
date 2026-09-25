@@ -637,7 +637,7 @@ const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
 //   ncImporto: number,                 ← nota di credito (toglie dal lordo)
 //   ncNum:    string,                  ← nota di credito n°
 //   ncNote:   string,                  ← note sulla nota di credito (campo vecchio, non più a video)
-//   ncStorna: string,                  ← quale fattura storna: 'oggi' (toglie dal lordo) | id di un sospeso | ''
+//   ncStorna: string,                  ← quale fattura storna: id di un sospeso | 'altra' | '' (mai effetto su incasso o cassa)
 //   pos:      [{id, desc, importo}],   ← pagamenti POS
 //   bonifici: [{id, desc, importo}],   ← pagamenti bonifico
 //   sospesi:  [{id, desc, importo}],   ← sospesi
@@ -1290,8 +1290,7 @@ function calcG(iso, riporto) {
   // Sezione "Incasso del giorno": ricevute e fatture sono totali diretti (campi singoli).
   const totRic  = n(d.ricevuteImporto);
   const totFatt = n(d.fattImporto);
-  const totNC   = n(d.ncImporto);   // nota di credito: toglie dal lordo (Marco, 25/09/2026)
-  const diffInc = (totRic > 0 || totFatt > 0) ? (lordo - (totRic + totFatt - totNC)) : 0;
+  const diffInc = (totRic > 0 || totFatt > 0) ? (lordo - totRic - totFatt) : 0;   // la nota di credito non c'entra
 
   // Storni digitali (tolgono dal lordo → contante giorno)
   const totPos  = (d.pos||[]).reduce((s,r)=>s+n(r.importo),0);
@@ -1852,8 +1851,8 @@ function renderDettaglio() {
               return `<select class="pag-metodo" style="width:100%;${manca?'border-color:#dc2626;background:#fef2f2;':''}"
                 onchange="updNcStorna('${iso}',this.value)">
                 <option value=""${sel===''?' selected':''}>— quale fattura? —</option>
-                <option value="oggi"${sel==='oggi'?' selected':''}>Fattura di oggi (toglie dal lordo)</option>
                 ${lista.map(s => `<option value="${s.id}"${sel===s.id?' selected':''}>${esc(s.desc)} — ${fmtData(s.dataApertura)} · ${fmt(s.importo)}</option>`).join('')}
+                <option value="altra"${sel==='altra'?' selected':''}>Altra fattura (non fra i sospesi)</option>
               </select>`;
             })()}
           </div>
@@ -2041,13 +2040,14 @@ function updCampo(iso, campo, val) {
 }
 
 // ── Nota di credito della scheda giorno (Marco, 25/09/2026): deve dire QUALE fattura storna ──
-// 'oggi'  → storna una fattura di oggi: toglie dal lordo del giorno.
-// id      → storna un sospeso: il sospeso si chiude (rientro 'nota_credito'), la cassa non si tocca.
-// ''      → non ancora scelto: nessun effetto sul lordo, la casella resta rossa.
+// Marco: «non abbiamo incassato niente, non c'entra con i contanti» → la NC NON tocca MAI
+// né l'incasso lordo né la cassa. Serve a chiudere il sospeso e a finire nell'Excel.
+// id      → storna un sospeso: il sospeso si chiude (rientro 'nota_credito').
+// 'altra' → fattura non fra i sospesi: solo registrata (Excel).
+// ''      → non ancora scelto: la tendina resta rossa.
 function _ricalcolaLordo(iso) {
   const d = D[iso]; if (!d) return;
-  const nc = d.ncStorna === 'oggi' ? (parseFloat(d.ncImporto)||0) : 0;
-  d.incassoLordo = (parseFloat(d.ricevuteImporto)||0) + (parseFloat(d.fattImporto)||0) - nc;
+  d.incassoLordo = (parseFloat(d.ricevuteImporto)||0) + (parseFloat(d.fattImporto)||0);
 }
 
 function _scollegaNcSospeso(iso, sid) {
@@ -2060,7 +2060,7 @@ function _scollegaNcSospeso(iso, sid) {
 function _collegaNcSospeso(iso) {
   const d = D[iso]; if (!d) return;
   const sid = d.ncStorna;
-  if (!sid || sid === 'oggi') return;
+  if (!sid || sid === 'altra') return;
   const s = getSospesoGlobali().find(x => x.id === sid);
   if (!s) { d.ncStorna = ''; return; }
   const importo = parseFloat(d.ncImporto) || 0;
@@ -2077,9 +2077,9 @@ function updNcStorna(iso, val) {
   ensureD(iso);
   const d = D[iso];
   const prev = d.ncStorna || '';
-  if (prev && prev !== 'oggi' && prev !== val) _scollegaNcSospeso(iso, prev);
+  if (prev && prev !== 'altra' && prev !== val) _scollegaNcSospeso(iso, prev);
   d.ncStorna = val;
-  if (val && val !== 'oggi') {
+  if (val && val !== 'altra') {
     if (!(parseFloat(d.ncImporto) > 0)) { notif('⚠️ Metti prima l\'importo della nota di credito'); d.ncStorna = ''; renderDettaglio(); return; }
     _collegaNcSospeso(iso);
     const s = getSospesoGlobali().find(x => x.id === val);
@@ -2100,13 +2100,16 @@ function _migraNotaCredito() {
   for (const iso of Object.keys(D)) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
     const d = D[iso];
-    if (!d || d.ncStorna !== undefined || !(parseFloat(d.ncImporto) > 0)) continue;
-    const s = getSospesoGlobali().find(x => x.rientro && x.rientro.metodo === 'nota_credito' && x.rientro.data === iso);
-    d.ncStorna = s ? s.id : 'oggi';
-    if (s && !d.ncNum && s.rientro.ncNum) d.ncNum = s.rientro.ncNum;
+    if (!d || !(parseFloat(d.ncImporto) > 0)) continue;
+    const prima = JSON.stringify([d.ncStorna, d.incassoLordo, d.ncNum]);
+    if (!d.ncStorna || d.ncStorna === 'oggi') {
+      const s = getSospesoGlobali().find(x => x.rientro && x.rientro.metodo === 'nota_credito' && x.rientro.data === iso);
+      d.ncStorna = s ? s.id : '';
+      if (s && !d.ncNum && s.rientro.ncNum) d.ncNum = s.rientro.ncNum;
+    }
     _collegaNcSospeso(iso);
-    _ricalcolaLordo(iso);
-    cambiato = true;
+    _ricalcolaLordo(iso);           // la NC non toglie mai dal lordo
+    if (JSON.stringify([d.ncStorna, d.incassoLordo, d.ncNum]) !== prima) cambiato = true;
   }
   if (cambiato) { _invalidaCache(); scheduleSave(); }
 }
