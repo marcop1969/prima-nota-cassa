@@ -1827,7 +1827,7 @@ function renderDettaglio() {
       </div>
 
       <!-- ↩️ Nota di credito sotto le fatture (Marco, 25/09/2026): importo (toglie dal lordo), n° e note -->
-      <div class="g3" style="margin-bottom:9px;">
+      <div class="g2" style="margin-bottom:9px;">
         <div>
           <span class="importo-sub-label">↩️ Nota di credito</span>
           <input type="text" inputmode="decimal" class="importo-sub-field" style="color:var(--rosso);"
@@ -1835,13 +1835,15 @@ function renderDettaglio() {
             onfocus="numFocus(this)" onblur="numBlur(this)"
             oninput="updSubImporto('${iso}','ncImporto',parseFmt(this.value))">
         </div>
-        <div class="fl"><label>Nota di credito n°</label>
-          <input type="text" value="${esc(d.ncNum||'')}" placeholder="es. 3"
-            onchange="updCampo('${iso}','ncNum',this.value)">
-        </div>
-        <div class="fl"><label>Note nota di credito</label>
-          <input type="text" value="${esc(d.ncNote||'')}" placeholder="es. storno fatt. 105"
-            onchange="updCampo('${iso}','ncNote',this.value)">
+        <div class="g2">
+          <div class="fl"><label>Nota di credito n°</label>
+            <input type="text" value="${esc(d.ncNum||'')}" placeholder="es. 3"
+              onchange="updCampo('${iso}','ncNum',this.value)">
+          </div>
+          <div class="fl"><label>Note nota di credito</label>
+            <input type="text" value="${esc(d.ncNote||'')}" placeholder="es. storno fatt. 105"
+              onchange="updCampo('${iso}','ncNote',this.value)">
+          </div>
         </div>
       </div>
 
@@ -2187,7 +2189,7 @@ function selezionaCommMese(idx, el) {
 }
 
 // Larghezze colonne Excel (14 colonne, nell'ordine dell'intestazione)
-const LARGHEZZE_COMM = [12, 5, 17, 16, 12, 12, 18, 17, 18, 18, 30, 13, 16, 32];
+const LARGHEZZE_COMM = [12, 5, 17, 16, 14, 16, 12, 12, 18, 17, 18, 18, 30, 13, 16, 32];
 
 function _payloadCommercialista(idx) {
   const {righe, grassetto, messaggio} = generaRigheCommercialista(idx, false);
@@ -2271,7 +2273,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
 
   const haDati = tuttiGiorni.some(g => {
     const d = D[g.iso];
-    return d && (n(d.incassoLordo)>0 ||
+    return d && (n(d.incassoLordo)>0 || n(d.ncImporto)>0 ||
                  (d.versamenti||[]).some(v=>n(v.importo)>0) ||
                  (d.pagCont||[]).some(p=>n(p.importo)>0));
   });
@@ -2293,7 +2295,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
   righe.push([]);
 
   // ── Header colonne ────────────────────────────────────────────
-  // Colonne: DATA | GG | CHIUSURA DI CASSA | CARTE | SOSPESI | ALTRI |
+  // Colonne: DATA | GG | CHIUSURA DI CASSA | NOTA DI CREDITO | N° NC | CARTE | SOSPESI | ALTRI |
   //          TOT. NON CONTANTI | CONTANTI GIORNO | VERSAMENTO BANCA |
   //          CASSA FINE GIORNO |
   //          RIENTRO — DESCRIZIONE | RIENTRO — DATA | RIENTRO — IMPORTO | NOTE
@@ -2301,6 +2303,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
   righe.push([
     'DATA', 'GG',
     'CHIUSURA DI CASSA',
+    'NOTA DI CREDITO', 'NOTA DI CREDITO N°',
     'CARTE DI CREDITO', 'SOSPESI', 'ALTRI',
     'TOT. NON CONTANTI',
     'CONTANTI GIORNO',
@@ -2311,7 +2314,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
   ]);
 
   // ── Righe giornaliere ─────────────────────────────────────────
-  let tLordo=0, tPos=0, tSos=0, tAlt=0,
+  let tLordo=0, tNC=0, tPos=0, tSos=0, tAlt=0,
       tStorni=0, tContG=0, tVers=0;
 
   const limite = soloAnteprima ? Math.min(7, tuttiGiorni.length) : tuttiGiorni.length;
@@ -2329,7 +2332,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     const rientroData    = rientriOggi.length > 0 ? isoToIt(rientriOggi[0].rientro.data) : '';
     const rientroImporto = rientriOggi.reduce((sum,s) => sum + n(s.rientro.importo), 0);
 
-    const haMovimento = d && (n(d.incassoLordo)>0 ||
+    const haMovimento = d && (n(d.incassoLordo)>0 || n(d.ncImporto)>0 ||
                               (d.versamenti||[]).some(v=>n(v.importo)>0) ||
                               (d.pagCont||[]).some(p=>n(p.importo)>0));
 
@@ -2337,7 +2340,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
       const cassaInvariata = riportoPrecedente(g.iso);
       righe.push([
         dataFmt, g.wd,
-        '', '', '', '', '', '', '', cassaInvariata,
+        '', '', '', '', '', '', '', '', '', cassaInvariata,
         rientroDesc, rientroData, nz(rientroImporto),
         ''
       ]);
@@ -2358,6 +2361,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     righe.push([
       dataFmt, g.wd,
       nz(c.lordo),
+      nz(n(d.ncImporto)), d.ncNum||'',
       nz(pos), nz(sos), nz(alt),
       nz(c.totStorni),
       nz(c.contGiorno),
@@ -2367,7 +2371,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
       d.note||''
     ]);
 
-    tLordo+=c.lordo; tPos+=pos; tSos+=sos; tAlt+=alt;
+    tLordo+=c.lordo; tNC+=n(d.ncImporto); tPos+=pos; tSos+=sos; tAlt+=alt;
     tStorni+=c.totStorni; tContG+=c.contGiorno;
     tVers+=vers;
   }
@@ -2383,7 +2387,7 @@ function generaRigheCommercialista(meseIdx, soloAnteprima) {
     grassetto.push(righe.length);
     righe.push([
       'TOTALE MESE', '',
-      nz(tLordo), nz(tPos), nz(tSos), nz(tAlt),
+      nz(tLordo), nz(tNC), '', nz(tPos), nz(tSos), nz(tAlt),
       nz(tStorni), nz(tContG), nz(tVers),
       cassaFine, '', '', '', ''
     ]);
