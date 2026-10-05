@@ -6,6 +6,7 @@ prima_nota_data.tmp
 
 # ─── Ambiente Python locale (ogni figlia ha il suo) ───
 venv/
+venv_vecchio_*/
 __pycache__/
 *.pyc
 
