@@ -23,6 +23,12 @@ fi
 
 # 2) Ambiente virtuale locale + dipendenze
 echo "→ Preparo l'ambiente Python (la prima volta richiede 1-2 minuti)..."
+# Un ambiente arrivato da un Mac con processore diverso (Intel → Apple) o con i collegamenti
+# rotti non parte: si mette da parte (mai cancellato) e si rifà da zero. I dati non c'entrano.
+if [ -d venv ] && ! ./venv/bin/python -c "import platform,sys; sys.exit(platform.machine()!='$(uname -m)')" >/dev/null 2>&1; then
+  mv venv "venv_vecchio_$(date +%Y%m%d_%H%M%S)"
+  echo "  (l'ambiente Python precedente non funziona su questo Mac: lo rifaccio da zero)"
+fi
 python3 -m venv venv 2>/dev/null
 ./venv/bin/python -m pip install --quiet --upgrade pip
 # Flask è essenziale: se fallisce, fermati

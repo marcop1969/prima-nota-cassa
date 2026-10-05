@@ -33,6 +33,11 @@ fi
 # Allinea il codice all'ultima versione (i file dati sono fuori dal repo → intatti)
 git reset --hard origin/main --quiet
 
+# Ambiente Python che non parte su questo Mac (es. cambio di processore): lo rifà 1-Installa
+if [ -d venv ] && ! ./venv/bin/python -c "import platform,sys; sys.exit(platform.machine()!='$(uname -m)')" >/dev/null 2>&1; then
+  echo "→ L'ambiente Python non funziona su questo Mac: lo rifaccio (i dati restano intatti)."
+  exec bash "$HERE/1-Installa.command"
+fi
 # Le dipendenze potrebbero essere cambiate
 [ -x "./venv/bin/python" ] && ./venv/bin/python -m pip install --quiet -r requirements.txt
 
