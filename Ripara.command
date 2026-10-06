@@ -32,6 +32,14 @@ if ! command -v git &>/dev/null; then
   exit 1
 fi
 
+# ── 0b) Mai sulla madre ─────────────────────────────────────
+for m in "$DEST/.madre" "$HOME/prima_nota_2026/.madre"; do
+  if [ -f "$m" ]; then
+    echo "Questo è il Mac MADRE ($m): Ripara serve solo alle postazioni figlie. Mi fermo senza toccare niente."
+    read -r -p "Premi Invio per chiudere..."; exit 1
+  fi
+done
+
 # ── 1) Dati al sicuro (prima di toccare qualsiasi cosa) ─────
 mkdir -p "$DATI/backups"
 echo "→ Metto al sicuro i dati..."

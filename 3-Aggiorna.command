@@ -18,6 +18,18 @@ if ! command -v git &>/dev/null; then
   exit 1
 fi
 
+# Sulla madre (file .madre) o con modifiche al codice non ancora pubblicate NON si fa il reset:
+# cancellerebbe il lavoro in corso. I dati non c'entrano, stanno fuori dalla cartella.
+if [ -f .madre ]; then
+  echo "Questo è il Mac MADRE: qui il codice si modifica, non si scarica. Niente da fare."
+  read -r -p "Premi Invio per chiudere..."; exit 1
+fi
+if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+  echo "Ci sono modifiche al codice non ancora pubblicate: l'aggiornamento le cancellerebbe. Mi fermo."
+  git status --short
+  read -r -p "Premi Invio per chiudere..."; exit 1
+fi
+
 echo "Versione attuale: $(cat VERSIONE.txt 2>/dev/null || echo '?')"
 echo "→ Cerco aggiornamenti dalla madre..."
 git fetch --quiet origin 2>/dev/null

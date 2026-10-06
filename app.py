@@ -20,6 +20,23 @@ from xml.sax.saxutils import escape as _xml_escape
 from flask import Flask, render_template, request, jsonify, Response
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024   # un .numbers o un salvataggio non superano 50 MB
+
+# ─── Solo dal Mac e solo dalla pagina della Prima Nota (controllo di sicurezza del 05/10/2026) ───
+# Un sito qualunque aperto in Safari poteva mandare un salvataggio vuoto a localhost:5001 e
+# svuotare i dati (provato): da qui si accettano solo richieste con Host locale e, quando il
+# browser dichiara da quale pagina arrivano (Origin), solo dalla pagina dell'app.
+_HOST_LOCALI = {'localhost', '127.0.0.1', '[::1]', '::1'}
+
+@app.before_request
+def _solo_locale():
+    from urllib.parse import urlparse
+    host = (request.host or '').rsplit(':', 1)[0] if not (request.host or '').endswith(']') else request.host
+    if host not in _HOST_LOCALI:
+        return jsonify({'ok': False, 'errore': 'richiesta non locale rifiutata'}), 403
+    origine = request.headers.get('Origin')
+    if origine and (urlparse(origine).hostname or '') not in _HOST_LOCALI:
+        return jsonify({'ok': False, 'errore': 'richiesta da un altro sito rifiutata'}), 403
 
 # ─── Persistenza dati — FUORI dalla cartella del codice ───────────
 # I dati vivono in ~/Library/Application Support/PrimaNota/, separati
@@ -154,10 +171,27 @@ def prima_nota_salva():
     Le chiavi speciali (__sospesi__, ecc.) vengono preservate
     anche se il browser non le include nel payload."""
     global _dati_in_memoria
+    if not request.is_json:
+        return jsonify({'ok': False, 'errore': 'Serve un salvataggio JSON'}), 415
     payload = request.get_json(silent=True) or {}
     dati = payload.get('dati', {})
     if not isinstance(dati, dict):
         return jsonify({'ok': False, 'errore': 'Payload non valido'}), 400
+    # Protezione dei dati: un salvataggio vuoto quando in memoria ci sono dei giorni non è mai
+    # voluto (scheda rotta, richiesta estranea), salvo il pulsante «Cancella anno» che lo dichiara.
+    giorni_prima = sum(1 for k in _dati_in_memoria if not k.startswith('__'))
+    giorni_dopo  = sum(1 for k in dati if not k.startswith('__'))
+    if giorni_dopo == 0 and giorni_prima > 0 and not payload.get('cancella_anno'):
+        return jsonify({'ok': False, 'errore': 'Salvataggio vuoto rifiutato: i dati restano'}), 400
+    # Se i giorni diminuiscono (cancellazione, anche voluta) prima una copia con data e ora, mai cancellata.
+    if giorni_dopo < giorni_prima and DATA_FILE.exists():
+        import shutil
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        try:
+            shutil.copy2(DATA_FILE, BACKUP_DIR / f'prima_nota_prima-di-ridurre_{ts}.json')
+        except Exception as e:
+            print(f'  [salva] copia prima di ridurre non riuscita: {e}')
     # Merge __sospesi__ con tombstone:
     # - il server è autorità su quali ID esistono
     # - il browser può aggiornare lo stato (rientro) di ID già noti al server

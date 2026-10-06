@@ -658,7 +658,7 @@ let D = {};
 
 function salvaSuServer() {
   if (window.location.protocol === 'file:') return;
-  const payload = JSON.stringify({ dati: D });
+  const payload = JSON.stringify({ dati: D, cancella_anno: !!window._cancellaAnnoRichiesta });
   // sendBeacon è garantito anche su beforeunload
   if (navigator.sendBeacon) {
     navigator.sendBeacon('/api/prima-nota/salva',
@@ -1158,7 +1158,9 @@ function cancellaAnno() {
   if (!confirm('CONFERMA FINALE: eliminare definitivamente tutti i dati 2026?')) return;
   D = {};
   try { localStorage.removeItem('pnc2026'); } catch(e){}
-  salvaSuServer(); // sovrascrive il file server con D vuoto
+  window._cancellaAnnoRichiesta = true;   // il server rifiuta i salvataggi vuoti non dichiarati
+  salvaSuServer(); // sovrascrive il file server con D vuoto (il server fa prima una copia)
+  window._cancellaAnnoRichiesta = false;
   _invalidaCache();
   renderAll();
   notif('✅ Tutti i dati del 2026 sono stati cancellati.');
