@@ -203,8 +203,8 @@ def prima_nota_salva():
         # solo quelle del server e il sospeso cancellato tornava indietro).
         eliminati = set(_dati_in_memoria.get('__sospesi_eliminati__', [])) \
                   | set(dati.get('__sospesi_eliminati__', []))
-        srv = {s['id']: s for s in _dati_in_memoria['__sospesi__'] if isinstance(s, dict) and 'id' in s}
-        brw = {s['id']: s for s in dati.get('__sospesi__', []) if isinstance(s, dict) and 'id' in s}
+        srv = {s['id']: s for s in _dati_in_memoria['__sospesi__'] if isinstance(s, dict) and isinstance(s.get('id'), (str, int))}
+        brw = {s['id']: s for s in dati.get('__sospesi__', []) if isinstance(s, dict) and isinstance(s.get('id'), (str, int))}   # un id strano non deve bloccare il salvataggio
         # Base = sospesi del server MENO quelli con tombstone: un cancellato non torna più.
         merged = {sid: s for sid, s in srv.items() if sid not in eliminati}
         for sid, entry in brw.items():
@@ -327,7 +327,7 @@ def _crea_xlsx(righe, nome_foglio, grassetto=(), larghezze=()):
 def prima_nota_export_xlsx():
     """Riceve dal browser le righe già calcolate (numeri e testi) e restituisce
     il file Excel da scaricare (export per il commercialista)."""
-    p = request.get_json(force=True, silent=True) or {}
+    p = request.get_json(silent=True) or {}
     righe = p.get('righe')
     if not isinstance(righe, list) or not righe:
         return jsonify({'ok': False, 'errore': 'Nessuna riga da esportare'}), 400
@@ -400,7 +400,7 @@ def prima_nota_export_email():
     """Crea l'Excel del mese, lo salva in `esportazioni/` e apre in Mail una
     nuova e-mail per il commercialista con destinatario, oggetto e allegato
     già pronti. NON spedisce: il tasto Invia lo preme Marco."""
-    p = request.get_json(force=True, silent=True) or {}
+    p = request.get_json(silent=True) or {}
     righe = p.get('righe')
     if not isinstance(righe, list) or not righe:
         return jsonify({'ok': False, 'errore': 'Nessuna riga da esportare'}), 400

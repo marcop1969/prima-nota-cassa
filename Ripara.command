@@ -43,11 +43,13 @@ done
 # ── 1) Dati al sicuro (prima di toccare qualsiasi cosa) ─────
 mkdir -p "$DATI/backups"
 echo "→ Metto al sicuro i dati..."
+n=0
 for f in "$DATI/prima_nota_data.json" \
          "$DEST/prima_nota_data.json" \
          "$HOME/prima_nota_2026/prima_nota_data.json"; do
   [ -f "$f" ] || continue
-  cp -p "$f" "$DATI/backups/prima_della_riparazione_${TS}.json" 2>/dev/null \
+  n=$((n+1))
+  cp -p "$f" "$DATI/backups/prima_della_riparazione_${TS}_${n}.json" 2>/dev/null \
     && echo "   copia salvata da: $f"
   # Se nella posizione ufficiale non c'e' nulla, portaceli (vecchie installazioni)
   if [ ! -f "$DATI/prima_nota_data.json" ]; then
